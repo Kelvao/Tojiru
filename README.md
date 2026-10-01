@@ -15,6 +15,7 @@ Tudo roda no navegador. As imagens são lidas localmente e nunca são enviadas a
 - Gera o `ComicInfo.xml` com título, autor, artista, gêneros, editora, ano, idioma, volume, sinopse, direção de leitura e índice.
 - Gera o `.cbz` sem recompressão, ou baixa apenas o `ComicInfo.xml`.
 - Interface escura inspirada no GNOME/libadwaita, responsiva para desktop e celular.
+- Disponível em inglês e português (Brasil), com troca automática pelo idioma do navegador e botão para alternar.
 
 ## Como usar
 
@@ -75,6 +76,24 @@ As páginas marcadas saem do item de origem e passam a formar o novo item, que �
 
 Se você marcar uma página do meio de um capítulo, ela sai do capítulo e o restante continua como um único item. O capítulo não é dividido em dois.
 
+## Idiomas
+
+A interface está disponível em **English** e **Português (Brasil)**.
+
+- Na primeira visita, o idioma é escolhido pela lista de idiomas do navegador (`navigator.languages`). Qualquer variante de português (`pt-PT`, por exemplo) usa Português (Brasil). Idiomas não suportados usam inglês.
+- O botão com globo no canto direito da barra superior alterna entre os idiomas. A escolha é guardada no `localStorage` do navegador e passa a ter prioridade sobre a detecção automática.
+- O campo **Idioma do mangá** (`LanguageISO`) começa com o código do idioma da interface (`pt` ou `en`) e deixa de acompanhar a troca assim que você edita o campo.
+- Os nomes padrão do índice (`Capa`/`Cover`, `Capítulo N`/`Chapter N` etc.) seguem o idioma da interface no momento em que o arquivo é gerado. Nomes digitados por você não são alterados.
+- A detecção de capa, índice, extras e contracapa pelo nome de pastas e arquivos reconhece termos em português e inglês, independentemente do idioma da interface.
+
+### Adicionando um idioma
+
+1. Em `i18n.js`, inclua o idioma em `LANGUAGES` (`code` curto para o botão e `name`).
+2. Copie o bloco `en` dentro de `TRANSLATIONS` para a nova chave e traduza os valores. As chaves não mudam.
+3. Entradas com forma plural usam as categorias de `Intl.PluralRules` do idioma (`one`, `other` e, quando existir, `few`, `many`...). A categoria `other` é obrigatória.
+
+Chaves ausentes em um idioma caem para o inglês. Textos estáticos do HTML usam `data-i18n` (texto), `data-i18n-placeholder` e `data-i18n-aria-label`. Textos montados em JavaScript usam `t(chave, parâmetros)`, com marcadores `{nome}`.
+
 ## Formato do ComicInfo.xml
 
 O índice usa uma entrada `<Page>` por item, e não por imagem. `Image` é a posição da primeira página do item no CBZ, começando em 0. O valor do item seguinte é o valor do anterior somado à quantidade de páginas do anterior.
@@ -132,23 +151,33 @@ python3 -m http.server 8000
 - Navegador moderno com suporte a seleção de pastas (`webkitdirectory`): Chrome, Edge, Firefox e Safari recentes.
 - Acesso à internet para carregar a biblioteca [JSZip](https://stuk.github.io/jszip/) (CDN cdnjs) e a fonte Inter (Google Fonts). Sem a fonte, a interface usa a fonte do sistema.
 
-Para usar offline, baixe o `jszip.min.js` para `js/vendor/` e troque o `src` da tag `<script>` correspondente em `index.html`.
+Para usar offline, baixe o `jszip.min.js` para `vendor/` e troque o `src` da tag `<script>` correspondente em `index.html`.
 
 ## Estrutura do projeto
 
 ```
 tojiru/
-├── index.html      Estrutura da página e do diálogo "Novo item"
-├── css/
-│   └── style.css   Tema escuro estilo libadwaita, componentes e responsividade
-├── js/
-│   └── app.js      Toda a lógica da aplicação
+├── index.html   Estrutura da página e do diálogo "Novo item"
+├── style.css    Tema escuro estilo libadwaita, componentes e responsividade
+├── i18n.js      Traduções, detecção de idioma e função t()
+├── app.js       Lógica da aplicação
 └── README.md
 ```
 
-### Organização do `js/app.js`
+Todos os arquivos ficam na mesma pasta e se referenciam por nome (`href="style.css"`, `src="app.js"`). Basta manter os quatro arquivos juntos, sem subpastas.
 
-O script é um arquivo clássico (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco.
+### Organização do `i18n.js`
+
+| Bloco | Funções principais |
+| --- | --- |
+| Dados | `LANGUAGES`, `TRANSLATIONS` |
+| Detecção | `detectLanguage`, `matchSupportedLanguage`, `readStoredLanguage`, `storeLanguage` |
+| Estado | `setLanguage`, `nextLanguage` |
+| Tradução | `t`, `applyStaticTranslations` |
+
+### Organização do `app.js`
+
+Os scripts são arquivos clássicos (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco. `i18n.js` precisa ser carregado antes de `app.js`.
 
 | Bloco | Funções principais |
 | --- | --- |
@@ -158,6 +187,7 @@ O script é um arquivo clássico (sem módulos ES), para funcionar também ao ab
 | CBZ | `addPagesToZip`, `pageFileName`, `archiveBaseName`, `downloadBlob` |
 | Renderização | `renderItems`, `createItemRow`, `createKindSelect`, `describeSummary` |
 | Novo item | `openPicker`, `createManualItem`, `restoreItem`, `insertByKind` |
+| Idioma | `refreshLanguage`, `toggleLanguage`, `folderLabel`, `renderStatus` |
 | Ações e eventos | `onFolderSelected`, `generateCbz`, `numberChapters`, `bindEvents` |
 
 Um item da lista é um objeto com esta forma:
@@ -185,8 +215,9 @@ Um item da lista é um objeto com esta forma:
 ### Adicionando um novo tipo de item
 
 1. Inclua o valor em `Kind`.
-2. Inclua a definição em `KIND_DEFINITIONS` (`label`, `pageType`, `defaultName`, `sortOrder`, `namePattern`).
-3. Se o tipo puder ser escolhido em **Novo item**, inclua-o em `PICKER_KINDS`.
+2. Inclua a definição em `KIND_DEFINITIONS` (`pageType`, `sortOrder`, `namePattern`).
+3. Inclua `kind.<valor>.label` e `kind.<valor>.name` em todos os idiomas de `TRANSLATIONS`.
+4. Se o tipo puder ser escolhido em **Novo item**, inclua-o em `PICKER_KINDS`.
 
 A lista de opções do seletor, a ordenação, a detecção por nome e o XML passam a usar a nova definição automaticamente.
 
@@ -198,4 +229,4 @@ A lista de opções do seletor, a ordenação, a detecção por nome e o XML pas
 
 ## Privacidade
 
-Os arquivos são processados apenas no navegador. A única requisição externa feita pela página é o carregamento da biblioteca JSZip e da fonte.
+Os arquivos são processados apenas no navegador. A única requisição externa feita pela página é o carregamento da biblioteca JSZip e da fonte. O idioma escolhido é a única informação guardada no navegador.

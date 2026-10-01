@@ -7,9 +7,6 @@ const FRONT_COVER_TYPE = "FrontCover";
 const MIN_PAGE_NUMBER_WIDTH = 4;
 const BYTES_PER_MB = 1024 * 1024;
 const HIDDEN_CLASS = "hide";
-const EMPTY_LIST_MESSAGE = "Os itens do índice aparecem aqui depois que você escolher a pasta.";
-const EMPTY_SUMMARY_MESSAGE = "Nenhuma pasta carregada";
-const NO_IMAGES_MESSAGE = "Nenhuma imagem achada.";
 const XML_HEADER = '<?xml version="1.0" encoding="utf-8"?>\n<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n';
 const STORE_ONLY = { compression: "STORE" };
 
@@ -24,11 +21,11 @@ const Kind = Object.freeze({
 });
 
 const KIND_DEFINITIONS = {
-  [Kind.CHAPTER]: { label: "Capítulo", pageType: "", defaultName: "Capítulo", sortOrder: 2, namePattern: null },
-  [Kind.COVER]: { label: "Capa", pageType: FRONT_COVER_TYPE, defaultName: "Capa", sortOrder: 0, namePattern: /^(capa|cover|front)/ },
-  [Kind.CONTENTS]: { label: "Índice", pageType: "Other", defaultName: "Índice", sortOrder: 1, namePattern: /^(indice|index|sumario|toc|contents)/ },
-  [Kind.EXTRA]: { label: "Extra", pageType: "Other", defaultName: "Extra", sortOrder: 3, namePattern: /^(extra|bonus|omake|especial|special|posfacio|prefacio)/ },
-  [Kind.BACK_COVER]: { label: "Contracapa", pageType: "BackCover", defaultName: "Contracapa", sortOrder: 4, namePattern: /^(contra ?capa|back|rear)/ },
+  [Kind.CHAPTER]: { pageType: "", sortOrder: 2, namePattern: null },
+  [Kind.COVER]: { pageType: FRONT_COVER_TYPE, sortOrder: 0, namePattern: /^(capa|cover|front)/ },
+  [Kind.CONTENTS]: { pageType: "Other", sortOrder: 1, namePattern: /^(indice|index|sumario|toc|contents)/ },
+  [Kind.EXTRA]: { pageType: "Other", sortOrder: 3, namePattern: /^(extra|bonus|omake|especial|special|posfacio|prefacio)/ },
+  [Kind.BACK_COVER]: { pageType: "BackCover", sortOrder: 4, namePattern: /^(contra ?capa|back|rear)/ },
 };
 
 const byId = (id) => document.getElementById(id);
@@ -46,6 +43,9 @@ const ui = {
   xmlButton: byId("xml"),
   generateButton: byId("go"),
   addButton: byId("add"),
+  languageButton: byId("langToggle"),
+  languageCode: byId("langCode"),
+  languageField: byId("lang"),
   picker: byId("picker"),
   pickName: byId("pickName"),
   pickKind: byId("pickKind"),
@@ -58,6 +58,9 @@ const ui = {
 const PICKER_KINDS = [Kind.CONTENTS, Kind.COVER, Kind.EXTRA, Kind.BACK_COVER];
 
 let items = [];
+let folderLoaded = false;
+let statusMessage = null;
+let languageFieldTouched = false;
 let pickerSelection = new Set();
 let previewUrls = [];
 
@@ -123,8 +126,20 @@ function buildItems(imageFiles) {
   return result.sort(compareItems);
 }
 
+const kindLabel = (kind) => t(`kind.${kind}.label`);
+
+function displayFolder(name) {
+  return name === LOOSE_FILES_FOLDER ? t("item.root") : name;
+}
+
+function folderLabel(item) {
+  if (!item.manual) return displayFolder(item.folder);
+  const folders = [...new Set(item.sources.values())].map(displayFolder).join(", ");
+  return t("item.from", { folders });
+}
+
 function defaultName(item, list) {
-  const { defaultName: baseName } = getDefinition(item);
+  const baseName = t(`kind.${item.kind}.name`);
   if (!isChapter(item)) return baseName;
   const chapterNumber = list.filter(isChapter).indexOf(item) + 1;
   return `${baseName} ${chapterNumber}`;
@@ -253,7 +268,7 @@ function createReorderControls(index) {
 }
 
 function createUndoButton(item) {
-  const button = createElement("button", "lnk", "Desfazer");
+  const button = createElement("button", "lnk", t("item.undo"));
   button.tabIndex = -1;
   button.addEventListener("click", () => restoreItem(item));
   return button;
@@ -261,8 +276,8 @@ function createUndoButton(item) {
 
 function createFolderLabel(item) {
   const label = createElement("div", item.manual ? "fn man" : "fn");
-  label.title = item.folder;
-  label.append(createElement("span", "", item.folder));
+  label.title = folderLabel(item);
+  label.append(createElement("span", "", folderLabel(item)));
   if (item.manual) label.append(createUndoButton(item));
   return label;
 }
@@ -277,9 +292,9 @@ function createTitleInput(item) {
 
 function createKindSelect(item) {
   const select = createElement("select", "kd");
-  select.setAttribute("aria-label", "Tipo");
-  for (const [kind, definition] of Object.entries(KIND_DEFINITIONS)) {
-    const option = createElement("option", "", definition.label);
+  select.setAttribute("aria-label", t("item.kind"));
+  for (const kind of Object.keys(KIND_DEFINITIONS)) {
+    const option = createElement("option", "", kindLabel(kind));
     option.value = kind;
     select.append(option);
   }
@@ -292,8 +307,8 @@ function createKindSelect(item) {
 }
 
 function createStartPageLabel(item, startPage) {
-  const label = createElement("div", "pg", `p. ${startPage + 1}`);
-  label.title = `${item.files.length} páginas`;
+  const label = createElement("div", "pg", t("page.start", { n: startPage + 1 }));
+  label.title = t("count.pages", { n: item.files.length });
   return label;
 }
 
@@ -310,19 +325,22 @@ function createItemRow(item, index, startPage) {
 }
 
 function describeSummary(list) {
-  if (!list.length) return EMPTY_SUMMARY_MESSAGE;
+  if (!list.length) return t("summary.empty");
   const chapters = list.filter(isChapter).length;
   const extras = list.length - chapters;
-  const extrasText = extras ? ` · ${extras} extras` : "";
-  return `${chapters} capítulos${extrasText} · ${countPages(list)} páginas`;
+  const parts = [t("count.chapters", { n: chapters })];
+  if (extras) parts.push(t("count.extras", { n: extras }));
+  parts.push(t("count.pages", { n: countPages(list) }));
+  return parts.join(" · ");
 }
 
 function renderItems() {
   const startPages = computeStartPages(items);
   const rows = items.map((item, index) => createItemRow(item, index, startPages[index]));
   if (rows.length) ui.list.replaceChildren(...rows);
-  else ui.list.textContent = EMPTY_LIST_MESSAGE;
+  else ui.list.textContent = t("list.empty");
   ui.summary.textContent = describeSummary(items);
+  renderFolderStatus();
 }
 
 function setExportEnabled(enabled) {
@@ -331,8 +349,13 @@ function setExportEnabled(enabled) {
   ui.addButton.disabled = !enabled;
 }
 
-function showStatus(message) {
-  ui.status.textContent = message;
+function renderStatus() {
+  ui.status.textContent = statusMessage ? t(statusMessage.key, statusMessage.params) : "";
+}
+
+function showStatus(key, params = {}) {
+  statusMessage = { key, params };
+  renderStatus();
 }
 
 function startProgress() {
@@ -363,15 +386,20 @@ function fillSeriesFromFolder(imageFiles) {
 }
 
 function describeSelection(list) {
-  return list.length ? `${list.length} itens, ${countPages(list)} páginas.` : NO_IMAGES_MESSAGE;
+  return `${t("count.items", { n: list.length })}, ${t("count.pages", { n: countPages(list) })}.`;
+}
+
+function renderFolderStatus() {
+  if (items.length) ui.folderStatus.textContent = describeSelection(items);
+  else ui.folderStatus.textContent = t(folderLoaded ? "folder.noImages" : "folder.hint");
 }
 
 function onFolderSelected(event) {
   const imageFiles = [...event.target.files].filter((file) => IMAGE_EXTENSION.test(file.name));
+  folderLoaded = true;
   items = buildItems(imageFiles);
   fillSeriesFromFolder(imageFiles);
   renderItems();
-  ui.folderStatus.textContent = describeSelection(items);
   setExportEnabled(items.length > 0);
 }
 
@@ -387,15 +415,18 @@ async function generateCbz() {
     const zip = new JSZip();
     const pageCount = addPagesToZip(zip, items);
     zip.file(COMIC_INFO_FILE, buildComicInfoXml(readMetadata(), items));
-    showStatus("Empacotando...");
+    showStatus("status.packing");
     const blob = await zip.generateAsync(
       { type: "blob", compression: "STORE", streamFiles: true },
       (meta) => { ui.progress.value = meta.percent; },
     );
     downloadBlob(blob, `${archiveBaseName()}.cbz`);
-    showStatus(`Pronto: ${pageCount} páginas, ${(blob.size / BYTES_PER_MB).toFixed(1)} MB.`);
+    showStatus("status.done", {
+      pages: t("count.pages", { n: pageCount }),
+      size: (blob.size / BYTES_PER_MB).toFixed(1),
+    });
   } catch (error) {
-    showStatus(`Erro: ${error.message}`);
+    showStatus("status.error", { message: error.message });
   } finally {
     ui.generateButton.disabled = false;
   }
@@ -415,10 +446,9 @@ function originOf(file) {
 function createManualItem() {
   const files = items.flatMap((item) => item.files).filter((file) => pickerSelection.has(file));
   const sources = new Map(files.map((file) => [file, originOf(file)]));
-  const folder = `de ${[...new Set(sources.values())].join(", ")}`;
   items.forEach((item) => { item.files = item.files.filter((file) => !pickerSelection.has(file)); });
   items = items.filter((item) => item.files.length > 0);
-  insertByKind(items, { folder, kind: ui.pickKind.value, title: ui.pickName.value.trim(), files, manual: true, sources });
+  insertByKind(items, { folder: "", kind: ui.pickKind.value, title: ui.pickName.value.trim(), files, manual: true, sources });
 }
 
 function restoreItem(item) {
@@ -447,7 +477,7 @@ function releasePreviews() {
 
 function updatePickerState() {
   ui.pickOk.disabled = pickerSelection.size === 0;
-  ui.pickCount.textContent = `${pickerSelection.size} páginas selecionadas`;
+  ui.pickCount.textContent = t("count.selectedPages", { n: pickerSelection.size });
 }
 
 function createPickerThumb(file) {
@@ -472,7 +502,7 @@ function createPickerGroup(item) {
   const group = createElement("div", "pk-group");
   const grid = createElement("div", "pk-grid");
   grid.append(...item.files.map(createPickerThumb));
-  group.append(createElement("div", "pk-title", `${item.folder} · ${item.files.length} páginas`), grid);
+  group.append(createElement("div", "pk-title", `${folderLabel(item)} · ${t("count.pages", { n: item.files.length })}`), grid);
   return group;
 }
 
@@ -491,11 +521,34 @@ function confirmPicker() {
 }
 
 function fillPickerKinds() {
-  for (const kind of PICKER_KINDS) {
-    const option = createElement("option", "", KIND_DEFINITIONS[kind].label);
+  const selected = ui.pickKind.value;
+  const options = PICKER_KINDS.map((kind) => {
+    const option = createElement("option", "", kindLabel(kind));
     option.value = kind;
-    ui.pickKind.append(option);
-  }
+    return option;
+  });
+  ui.pickKind.replaceChildren(...options);
+  if (selected) ui.pickKind.value = selected;
+}
+
+function syncLanguageField() {
+  if (!languageFieldTouched) ui.languageField.value = currentLanguage.split("-")[0];
+}
+
+function refreshLanguage() {
+  applyStaticTranslations();
+  ui.languageCode.textContent = LANGUAGES[currentLanguage].code;
+  syncLanguageField();
+  fillPickerKinds();
+  renderItems();
+  renderStatus();
+}
+
+function toggleLanguage() {
+  const language = nextLanguage();
+  setLanguage(language);
+  storeLanguage(language);
+  refreshLanguage();
 }
 
 function bindEvents() {
@@ -508,7 +561,10 @@ function bindEvents() {
   ui.pickOk.addEventListener("click", confirmPicker);
   ui.pickCancel.addEventListener("click", () => ui.picker.close());
   ui.picker.addEventListener("close", releasePreviews);
-  fillPickerKinds();
+  ui.languageButton.addEventListener("click", toggleLanguage);
+  ui.languageField.addEventListener("input", () => { languageFieldTouched = true; });
 }
 
 bindEvents();
+setLanguage(detectLanguage());
+refreshLanguage();

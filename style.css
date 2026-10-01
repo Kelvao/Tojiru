@@ -37,6 +37,7 @@ body {
 }
 
 .hb {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -677,4 +678,22 @@ dialog[open] {
   * {
     transition: none!important;
   }
+}
+
+button.flat {
+  background: transparent;
+}
+
+button.flat:hover {
+  background: var(--btn);
+}
+
+.hb .lang {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 13px;
 }

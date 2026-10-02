@@ -1,8 +1,10 @@
 # Tojiru 綴じる
 
-Aplicativo web que empacota uma pasta de mangá em um único arquivo **CBZ** e gera o **ComicInfo.xml** com metadados e um índice navegável por capítulos.
+Aplicativo web que empacota uma pasta de mangá em um único arquivo **CBZ** (com **ComicInfo.xml**) ou **EPUB**, ambos com metadados e um índice navegável por capítulos.
 
 O nome vem do verbo japonês 綴じる (*tojiru*), "encadernar".
+
+Código-fonte: <https://github.com/Kelvao/Tojiru>
 
 Tudo roda no navegador. As imagens são lidas localmente e nunca são enviadas a nenhum servidor.
 
@@ -14,8 +16,26 @@ Tudo roda no navegador. As imagens são lidas localmente e nunca são enviadas a
 - Permite criar itens manualmente escolhendo páginas, inclusive as que estão dentro da pasta de um capítulo.
 - Gera o `ComicInfo.xml` com título, autor, artista, gêneros, editora, ano, idioma, volume, sinopse, direção de leitura e índice.
 - Gera o `.cbz` sem recompressão, ou baixa apenas o `ComicInfo.xml`.
-- Interface escura inspirada no GNOME/libadwaita, responsiva para desktop e celular.
+- Gera um `.epub` (EPUB 3, layout fixo) com cada imagem centralizada, sem distorcer nem cortar, e com o mesmo índice, capa e metadados.
+- Escolha do formato de saída por um seletor **CBZ | EPUB** na barra de ações.
+- Interface escura inspirada no GNOME/libadwaita, responsiva para celular, desktop e monitores ultrawide.
 - Disponível em inglês e português (Brasil), com troca automática pelo idioma do navegador e botão para alternar.
+
+## Layout em telas largas
+
+O layout se adapta à largura da janela:
+
+| Largura | Layout |
+| --- | --- |
+| até 1099 px | Uma coluna, com as seções empilhadas |
+| 1100 px ou mais | Painel lateral fixo (pasta e informações) à esquerda e o índice à direita, com a barra de ações embaixo do índice |
+| 1700 px ou mais | O painel lateral se divide em duas colunas (pasta e informações), e o índice fica na terceira |
+
+O conteúdo é centralizado e limitado a 2200 px de largura (3200 px a partir de 3000 px), para não ficar esticado de ponta a ponta em monitores ultrawide. O botão de idioma acompanha esse limite.
+
+O painel lateral acompanha a rolagem, então as informações continuam visíveis enquanto você percorre uma lista longa de capítulos. Se o painel for mais alto que a janela, ele rola por conta própria.
+
+A lista do índice usa container queries: conforme a largura disponível, ela se divide em 2 colunas (a partir de 1000 px), 3 colunas (1500 px) e 4 colunas (2000 px). As colunas são preenchidas de cima para baixo, na ordem do índice. O diálogo **Novo item** também cresce e mostra mais miniaturas por linha.
 
 ## Como usar
 
@@ -27,7 +47,7 @@ Tudo roda no navegador. As imagens são lidas localmente e nunca são enviadas a
    - ajuste o **Tipo** de cada item (Capítulo, Capa, Índice, Extra, Contracapa);
    - reordene com ▲ e ▼.
 5. Se a capa ou o índice estiverem dentro da pasta de um capítulo, use **Novo item** (veja abaixo).
-6. Clique em **Gerar CBZ**. O download começa quando o empacotamento termina.
+6. Na barra inferior, escolha o formato (**CBZ** ou **EPUB**) e clique em **Gerar**. O download começa quando o empacotamento termina. Com EPUB selecionado, o botão do `ComicInfo.xml` é ocultado, já que o EPUB leva seus metadados no próprio arquivo.
 
 ## Estrutura de pastas esperada
 
@@ -83,7 +103,7 @@ A interface está disponível em **English** e **Português (Brasil)**.
 - Na primeira visita, o idioma é escolhido pela lista de idiomas do navegador (`navigator.languages`). Qualquer variante de português (`pt-PT`, por exemplo) usa Português (Brasil). Idiomas não suportados usam inglês.
 - O botão com globo no canto direito da barra superior alterna entre os idiomas. A escolha é guardada no `localStorage` do navegador e passa a ter prioridade sobre a detecção automática.
 - O campo **Idioma do mangá** (`LanguageISO`) começa com o código do idioma da interface (`pt` ou `en`) e deixa de acompanhar a troca assim que você edita o campo.
-- Os nomes padrão do índice (`Capa`/`Cover`, `Capítulo N`/`Chapter N` etc.) seguem o idioma da interface no momento em que o arquivo é gerado. Nomes digitados por você não são alterados.
+- Os nomes padrão do índice (`Capa`/`Cover`, `Capítulo N`/`Chapter N` etc.) seguem o idioma da interface no momento em que o arquivo é gerado, tanto no CBZ quanto no EPUB. Nomes digitados por você não são alterados.
 - A detecção de capa, índice, extras e contracapa pelo nome de pastas e arquivos reconhece termos em português e inglês, independentemente do idioma da interface.
 
 ### Adicionando um idioma
@@ -131,6 +151,62 @@ Regras:
 
 O formato segue o esquema ComicInfo (Anansi Project). O suporte a `Pages` e `Bookmark` varia entre leitores e gerenciadores de biblioteca.
 
+## Formato do EPUB
+
+O EPUB é gerado a partir da mesma lista do índice, na mesma ordem de páginas do CBZ.
+
+### Imagem centralizada, sem distorcer nem cortar
+
+O arquivo é um EPUB 3 de **layout fixo** (`rendition:layout = pre-paginated`). Cada página é um XHTML com a imagem dentro de um `<svg>`:
+
+```xml
+<meta name="viewport" content="width=900, height=1300"/>
+<svg width="100%" height="100%" viewBox="0 0 900 1300" preserveAspectRatio="xMidYMid meet">
+  <image width="900" height="1300" xlink:href="../images/0002.jpg"/>
+</svg>
+```
+
+- `viewBox` com as dimensões reais da imagem e `preserveAspectRatio="xMidYMid meet"` fazem o leitor escalar a página inteira para caber na tela, mantendo a proporção e centralizando na horizontal e na vertical. Sobram faixas vazias nos lados ou em cima e embaixo quando a proporção da tela é diferente, e nada é cortado.
+- A largura e a altura são lidas de cada imagem ao gerar o arquivo, então páginas de tamanhos diferentes (por exemplo páginas duplas) funcionam no mesmo EPUB.
+- Em testes com Chromium, páginas retrato, paisagem e muito altas, em janelas de proporções diferentes, mantiveram a proporção original com folgas iguais nos dois lados.
+
+### Conteúdo do arquivo
+
+```
+mimetype                    sem compressão, primeiro item do ZIP
+META-INF/container.xml
+OEBPS/content.opf           metadados, manifesto e ordem de leitura
+OEBPS/nav.xhtml             índice (EPUB 3) e landmarks
+OEBPS/toc.ncx               índice (compatibilidade com EPUB 2)
+OEBPS/style.css
+OEBPS/text/page-0001.xhtml  uma página por imagem
+OEBPS/images/0001.jpg
+```
+
+### Mapeamento dos campos
+
+| Campo no Tojiru | No EPUB |
+| --- | --- |
+| Título | `dc:title` e coleção de série (`belongs-to-collection`) |
+| Volume | posição na coleção (`group-position`) |
+| Autor / Artista | `dc:creator` com papel `aut` / `art` |
+| Gêneros | um `dc:subject` por gênero |
+| Editora, Ano, Sinopse | `dc:publisher`, `dc:date`, `dc:description` |
+| Idioma do mangá | `dc:language` |
+| Leitura | `page-progression-direction`: `rtl` para "da direita para a esquerda", `ltr` nos demais |
+| Itens do índice | entradas do `nav.xhtml` e do `toc.ncx`, apontando para a primeira página de cada item |
+| Capa | a primeira página do item do tipo Capa, ou a primeira página do livro se não houver capa, marcada como `cover-image` |
+
+Os landmarks incluem a capa e o início da leitura (primeiro item do tipo Capítulo). Um identificador `urn:uuid:` novo é gerado a cada arquivo.
+
+### Imagens
+
+JPEG, PNG, GIF e WebP entram sem alteração. BMP e AVIF não são formatos padrão do EPUB e são convertidos para PNG no navegador. Para ler as dimensões, cada imagem é decodificada uma vez, o que torna a geração do EPUB mais lenta que a do CBZ em pastas grandes. A barra de progresso mostra a leitura das imagens e, em seguida, o empacotamento.
+
+### Compatibilidade
+
+A estrutura gerada foi conferida (XML bem formado, manifesto, ordem de leitura e links do índice consistentes, dimensões do `viewBox` iguais às das imagens), mas o arquivo não foi validado com o EPUBCheck. O layout fixo exige leitores com suporte a EPUB 3 de layout fixo. Leitores que tratam todo EPUB como texto reflowable podem ignorar o `viewport` e exibir as páginas de outra forma.
+
 ## Formato do CBZ
 
 - O `.cbz` é um ZIP com as páginas e o `ComicInfo.xml` na raiz.
@@ -160,11 +236,16 @@ tojiru/
 ├── index.html   Estrutura da página e do diálogo "Novo item"
 ├── style.css    Tema escuro estilo libadwaita, componentes e responsividade
 ├── i18n.js      Traduções, detecção de idioma e função t()
-├── app.js       Lógica da aplicação
+├── model.js     Itens do índice, tipos, detecção por nome e utilitários comuns
+├── cbz.js       Geração do CBZ e do ComicInfo.xml
+├── epub.js      Geração do EPUB
+├── app.js       Interface, estado e ações
 └── README.md
 ```
 
-Todos os arquivos ficam na mesma pasta e se referenciam por nome (`href="style.css"`, `src="app.js"`). Basta manter os quatro arquivos juntos, sem subpastas.
+Todos os arquivos ficam na mesma pasta e se referenciam por nome (`href="style.css"`, `src="app.js"`). Basta manter os arquivos juntos, sem subpastas.
+
+Os scripts são arquivos clássicos (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco. Eles compartilham o escopo global e precisam ser carregados nesta ordem: JSZip, `i18n.js`, `model.js`, `cbz.js`, `epub.js` e `app.js`.
 
 ### Organização do `i18n.js`
 
@@ -175,20 +256,45 @@ Todos os arquivos ficam na mesma pasta e se referenciam por nome (`href="style.c
 | Estado | `setLanguage`, `nextLanguage` |
 | Tradução | `t`, `applyStaticTranslations` |
 
-### Organização do `app.js`
+### Organização do `model.js`
 
-Os scripts são arquivos clássicos (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco. `i18n.js` precisa ser carregado antes de `app.js`.
+Não depende do DOM, exceto por `t()` para nomes de tipos. É usado por `cbz.js`, `epub.js` e `app.js`.
 
 | Bloco | Funções principais |
 | --- | --- |
-| Constantes e tipos | `Kind`, `KIND_DEFINITIONS`, mensagens e padrões |
-| Modelo | `createItem`, `compareItems`, `buildItems`, `detectKind`, `defaultName`, `displayName` |
-| ComicInfo | `readMetadata`, `buildComicInfoXml`, `buildPageEntries`, `escapeXml` |
-| CBZ | `addPagesToZip`, `pageFileName`, `archiveBaseName`, `downloadBlob` |
+| Tipos | `Kind`, `KIND_DEFINITIONS`, `getDefinition`, `isChapter` |
+| Itens | `createItem`, `compareItems`, `buildItems`, `splitByFolder`, `detectKind` |
+| Nomes | `defaultName`, `displayName`, `kindLabel`, `outputBaseName` |
+| Páginas | `countPages`, `computeStartPages` |
+| Utilitários | `escapeXml`, `STORE_ONLY` |
+
+### Organização do `cbz.js`
+
+| Bloco | Funções principais |
+| --- | --- |
+| ComicInfo | `buildComicInfoXml`, `buildPageEntries`, `buildPageEntry`, `xmlTag` |
+| ZIP | `addPagesToZip`, `pageFileName` |
+| Saída | `buildCbz` |
+
+### Organização do `epub.js`
+
+| Bloco | Funções principais |
+| --- | --- |
+| Imagens | `decodeImage`, `prepareImage`, `prepareAllImages`, `toPngBlob` |
+| Estrutura | `createPages`, `createEntries`, `createLandmarks`, `findCoverPageIndex` |
+| Documentos | `buildPageXhtml`, `buildNavXhtml`, `buildNcx`, `buildPackageOpf` |
+| Saída | `buildEpub` |
+
+### Organização do `app.js`
+
+| Bloco | Funções principais |
+| --- | --- |
+| Estado e DOM | `ui`, `items`, `outputFormat`, `readMetadata` |
 | Renderização | `renderItems`, `createItemRow`, `createKindSelect`, `describeSummary` |
 | Novo item | `openPicker`, `createManualItem`, `restoreItem`, `insertByKind` |
+| Formato e geração | `OUTPUT_FORMATS`, `renderFormat`, `setOutputFormat`, `generateOutput`, `handleProgress` |
 | Idioma | `refreshLanguage`, `toggleLanguage`, `folderLabel`, `renderStatus` |
-| Ações e eventos | `onFolderSelected`, `generateCbz`, `numberChapters`, `bindEvents` |
+| Ações e eventos | `onFolderSelected`, `numberChapters`, `downloadBlob`, `bindEvents` |
 
 Um item da lista é um objeto com esta forma:
 
@@ -212,6 +318,13 @@ Um item da lista é um objeto com esta forma:
 - Referências ao DOM concentradas no objeto `ui`.
 - Sem comentários no código; os nomes devem explicar a intenção.
 
+### Adicionando um formato de saída
+
+1. Crie um arquivo com uma função `async buildX(list, metadata, onProgress)` que devolva `{ blob, pageCount }`. `list` é a lista de itens, `metadata` vem de `readMetadata()` e `onProgress` recebe `{ stage, percent, current, total }`, com `stage` igual a `"reading"` ou `"packing"`.
+2. Carregue o arquivo em `index.html`, antes de `app.js`, e inclua-o na lista de verificação do aviso de carregamento.
+3. Registre o formato em `OUTPUT_FORMATS`, em `app.js`, com `extension` e `build`.
+4. Inclua um botão com `data-format` no seletor de formato.
+
 ### Adicionando um novo tipo de item
 
 1. Inclua o valor em `Kind`.
@@ -223,7 +336,8 @@ A lista de opções do seletor, a ordenação, a detecção por nome e o XML pas
 
 ## Limitações
 
-- O CBZ é montado em memória. Pastas muito grandes (na casa de alguns GB) podem esgotar a memória do navegador.
+- O CBZ e o EPUB são montados em memória. Pastas muito grandes (na casa de alguns GB) podem esgotar a memória do navegador.
+- O EPUB é de layout fixo, sem texto reflowable, e imagens que o navegador não consegue decodificar interrompem a geração com uma mensagem de erro.
 - A marcação de tipos é por item. Não é possível dividir um capítulo em dois itens de capítulo.
 - O Tojiru não lê nem edita um `ComicInfo.xml` já existente.
 

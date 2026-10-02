@@ -1,32 +1,5 @@
-const IMAGE_EXTENSION = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
-const FILE_NAME_FORBIDDEN_CHARS = /[\\/:*?"<>|]+/g;
-const COMIC_INFO_FILE = "ComicInfo.xml";
-const LOOSE_FILES_FOLDER = "(raiz)";
-const DEFAULT_ARCHIVE_NAME = "manga";
-const FRONT_COVER_TYPE = "FrontCover";
-const MIN_PAGE_NUMBER_WIDTH = 4;
 const BYTES_PER_MB = 1024 * 1024;
 const HIDDEN_CLASS = "hide";
-const XML_HEADER = '<?xml version="1.0" encoding="utf-8"?>\n<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n';
-const STORE_ONLY = { compression: "STORE" };
-
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
-const Kind = Object.freeze({
-  CHAPTER: "chapter",
-  COVER: "cover",
-  CONTENTS: "toc",
-  EXTRA: "extra",
-  BACK_COVER: "back",
-});
-
-const KIND_DEFINITIONS = {
-  [Kind.CHAPTER]: { pageType: "", sortOrder: 2, namePattern: null },
-  [Kind.COVER]: { pageType: FRONT_COVER_TYPE, sortOrder: 0, namePattern: /^(capa|cover|front)/ },
-  [Kind.CONTENTS]: { pageType: "Other", sortOrder: 1, namePattern: /^(indice|index|sumario|toc|contents)/ },
-  [Kind.EXTRA]: { pageType: "Other", sortOrder: 3, namePattern: /^(extra|bonus|omake|especial|special|posfacio|prefacio)/ },
-  [Kind.BACK_COVER]: { pageType: "BackCover", sortOrder: 4, namePattern: /^(contra ?capa|back|rear)/ },
-};
 
 const byId = (id) => document.getElementById(id);
 
@@ -42,6 +15,7 @@ const ui = {
   clearButton: byId("clear"),
   xmlButton: byId("xml"),
   generateButton: byId("go"),
+  formatButtons: document.querySelectorAll("[data-format]"),
   addButton: byId("add"),
   languageButton: byId("langToggle"),
   languageCode: byId("langCode"),
@@ -56,77 +30,26 @@ const ui = {
 };
 
 const PICKER_KINDS = [Kind.CONTENTS, Kind.COVER, Kind.EXTRA, Kind.BACK_COVER];
+const DEFAULT_OUTPUT_FORMAT = "cbz";
+const OUTPUT_FORMATS = {
+  cbz: { extension: "cbz", build: buildCbz },
+  epub: { extension: "epub", build: buildEpub },
+};
 
 let items = [];
+let outputFormat = DEFAULT_OUTPUT_FORMAT;
+
 let folderLoaded = false;
+
 let statusMessage = null;
+
 let languageFieldTouched = false;
+
 let pickerSelection = new Set();
+
 let previewUrls = [];
 
-const getDefinition = (item) => KIND_DEFINITIONS[item.kind];
-const isChapter = (item) => item.kind === Kind.CHAPTER;
-const countPages = (list) => list.reduce((total, item) => total + item.files.length, 0);
-const compareByFileName = (a, b) => collator.compare(a.name, b.name);
-const sortedByFileName = (files) => [...files].sort(compareByFileName);
 const readText = (id) => byId(id).value.trim();
-
-function createItem(folder, kind, files) {
-  return { folder, kind, title: "", files: sortedByFileName(files) };
-}
-
-function compareItems(a, b) {
-  const byKind = getDefinition(a).sortOrder - getDefinition(b).sortOrder;
-  return byKind || collator.compare(a.folder, b.folder);
-}
-
-function normalizeName(fileName) {
-  return fileName
-    .replace(/\.[^.]+$/, "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function detectKind(fileName) {
-  const normalized = normalizeName(fileName);
-  const match = Object.entries(KIND_DEFINITIONS).find(([, definition]) => definition.namePattern?.test(normalized));
-  return match ? match[0] : Kind.CHAPTER;
-}
-
-function rootFolderName(files) {
-  return files.length ? files[0].webkitRelativePath.split("/")[0] : "";
-}
-
-function splitByFolder(files) {
-  const folders = new Map();
-  const looseFiles = [];
-  for (const file of files) {
-    const [, name, ...deeperPath] = file.webkitRelativePath.split("/");
-    if (deeperPath.length === 0) {
-      looseFiles.push(file);
-      continue;
-    }
-    if (!folders.has(name)) folders.set(name, []);
-    folders.get(name).push(file);
-  }
-  return { folders, looseFiles };
-}
-
-function buildItems(imageFiles) {
-  const { folders, looseFiles } = splitByFolder(imageFiles);
-  const result = [...folders].map(([name, files]) => createItem(name, detectKind(name), files));
-  const chapterPages = [];
-  for (const file of looseFiles) {
-    const kind = detectKind(file.name);
-    if (kind === Kind.CHAPTER) chapterPages.push(file);
-    else result.push(createItem(file.name, kind, [file]));
-  }
-  if (chapterPages.length) result.push(createItem(LOOSE_FILES_FOLDER, Kind.CHAPTER, chapterPages));
-  return result.sort(compareItems);
-}
-
-const kindLabel = (kind) => t(`kind.${kind}.label`);
 
 function displayFolder(name) {
   return name === LOOSE_FILES_FOLDER ? t("item.root") : name;
@@ -138,40 +61,8 @@ function folderLabel(item) {
   return t("item.from", { folders });
 }
 
-function defaultName(item, list) {
-  const baseName = t(`kind.${item.kind}.name`);
-  if (!isChapter(item)) return baseName;
-  const chapterNumber = list.filter(isChapter).indexOf(item) + 1;
-  return `${baseName} ${chapterNumber}`;
-}
-
-function displayName(item, list) {
-  return item.title.trim() || defaultName(item, list);
-}
-
-function computeStartPages(list) {
-  let nextPage = 0;
-  return list.map((item) => {
-    const startPage = nextPage;
-    nextPage += item.files.length;
-    return startPage;
-  });
-}
-
-function escapeXml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function xmlTag(name, value) {
-  const isEmpty = value === "" || value === null || value === undefined;
-  return isEmpty ? "" : `  <${name}>${escapeXml(value)}</${name}>\n`;
-}
-
 function readMetadata() {
+  const genreList = readText("genre").split(",").map((genre) => genre.trim()).filter(Boolean);
   return {
     series: readText("series"),
     volume: readText("volume"),
@@ -180,58 +71,11 @@ function readMetadata() {
     writer: readText("writer"),
     penciller: readText("penciller"),
     publisher: readText("publisher"),
-    genres: readText("genre").split(",").map((genre) => genre.trim()).filter(Boolean).join(", "),
+    genreList,
+    genres: genreList.join(", "),
     language: readText("lang"),
     readingMode: byId("manga").value,
   };
-}
-
-function buildPageEntry(item, list, pageIndex) {
-  const pageType = getDefinition(item).pageType || (pageIndex === 0 ? FRONT_COVER_TYPE : "");
-  const typeAttribute = pageType ? ` Type="${pageType}"` : "";
-  const bookmark = escapeXml(displayName(item, list));
-  return `    <Page Image="${pageIndex}"${typeAttribute} Bookmark="${bookmark}" />\n`;
-}
-
-function buildPageEntries(list) {
-  const startPages = computeStartPages(list);
-  return list.map((item, index) => buildPageEntry(item, list, startPages[index])).join("");
-}
-
-function buildComicInfoXml(metadata, list) {
-  const fields = [
-    ["Title", metadata.series],
-    ["Series", metadata.series],
-    ["Volume", metadata.volume],
-    ["Summary", metadata.summary],
-    ["Year", metadata.year],
-    ["Writer", metadata.writer],
-    ["Penciller", metadata.penciller],
-    ["Publisher", metadata.publisher],
-    ["Genre", metadata.genres],
-    ["LanguageISO", metadata.language],
-    ["PageCount", countPages(list)],
-    ["Manga", metadata.readingMode],
-  ];
-  const body = fields.map(([name, value]) => xmlTag(name, value)).join("");
-  return `${XML_HEADER}${body}  <Pages>\n${buildPageEntries(list)}  </Pages>\n</ComicInfo>\n`;
-}
-
-function pageFileName(pageNumber, width, file) {
-  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  return String(pageNumber).padStart(width, "0") + extension;
-}
-
-function addPagesToZip(zip, list) {
-  const width = Math.max(MIN_PAGE_NUMBER_WIDTH, String(countPages(list)).length);
-  const files = list.flatMap((item) => item.files);
-  files.forEach((file, pageNumber) => zip.file(pageFileName(pageNumber, width, file), file, STORE_ONLY));
-  return files.length;
-}
-
-function archiveBaseName() {
-  const name = readText("series") || DEFAULT_ARCHIVE_NAME;
-  return name.replace(FILE_NAME_FORBIDDEN_CHARS, "_");
 }
 
 function downloadBlob(blob, fileName) {
@@ -403,24 +247,32 @@ function onFolderSelected(event) {
   setExportEnabled(items.length > 0);
 }
 
-function downloadComicInfo() {
-  const xml = buildComicInfoXml(readMetadata(), items);
-  downloadBlob(new Blob([xml], { type: "application/xml" }), COMIC_INFO_FILE);
+function renderFormat() {
+  ui.formatButtons.forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.format === outputFormat));
+  });
+  ui.xmlButton.hidden = outputFormat !== "cbz";
+  ui.generateButton.textContent = t("action.generate", { format: outputFormat.toUpperCase() });
 }
 
-async function generateCbz() {
+function setOutputFormat(format) {
+  outputFormat = format;
+  renderFormat();
+}
+
+function handleProgress({ stage, percent, current, total }) {
+  ui.progress.value = percent;
+  showStatus(stage === "reading" ? "status.reading" : "status.packing", { current, total });
+}
+
+async function generateOutput() {
+  const { extension, build } = OUTPUT_FORMATS[outputFormat];
+  const metadata = readMetadata();
   ui.generateButton.disabled = true;
   startProgress();
   try {
-    const zip = new JSZip();
-    const pageCount = addPagesToZip(zip, items);
-    zip.file(COMIC_INFO_FILE, buildComicInfoXml(readMetadata(), items));
-    showStatus("status.packing");
-    const blob = await zip.generateAsync(
-      { type: "blob", compression: "STORE", streamFiles: true },
-      (meta) => { ui.progress.value = meta.percent; },
-    );
-    downloadBlob(blob, `${archiveBaseName()}.cbz`);
+    const { blob, pageCount } = await build(items, metadata, handleProgress);
+    downloadBlob(blob, `${outputBaseName(metadata.series)}.${extension}`);
     showStatus("status.done", {
       pages: t("count.pages", { n: pageCount }),
       size: (blob.size / BYTES_PER_MB).toFixed(1),
@@ -430,6 +282,11 @@ async function generateCbz() {
   } finally {
     ui.generateButton.disabled = false;
   }
+}
+
+function downloadComicInfo() {
+  const xml = buildComicInfoXml(readMetadata(), items);
+  downloadBlob(new Blob([xml], { type: "application/xml" }), COMIC_INFO_FILE);
 }
 
 function insertByKind(list, item) {
@@ -540,6 +397,7 @@ function refreshLanguage() {
   ui.languageCode.textContent = LANGUAGES[currentLanguage].code;
   syncLanguageField();
   fillPickerKinds();
+  renderFormat();
   renderItems();
   renderStatus();
 }
@@ -556,7 +414,10 @@ function bindEvents() {
   ui.numberButton.addEventListener("click", numberChapters);
   ui.clearButton.addEventListener("click", clearTitles);
   ui.xmlButton.addEventListener("click", downloadComicInfo);
-  ui.generateButton.addEventListener("click", generateCbz);
+  ui.generateButton.addEventListener("click", generateOutput);
+  ui.formatButtons.forEach((button) => {
+    button.addEventListener("click", () => setOutputFormat(button.dataset.format));
+  });
   ui.addButton.addEventListener("click", openPicker);
   ui.pickOk.addEventListener("click", confirmPicker);
   ui.pickCancel.addEventListener("click", () => ui.picker.close());

@@ -235,7 +235,7 @@ ${spineItems}  </spine>
 
       const zip = new (getJsZip())();
       const put = (path, content, options = EPUB_FILE_OPTIONS) => zip.file(`${EPUB_CONTENT_DIR}/${path}`, content, options);
-      zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS, date: new Date(0));
+      zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS);
       zip.file("META-INF/container.xml", EPUB_CONTAINER_XML, EPUB_FILE_OPTIONS);
       put("content.opf", buildPackageOpf({ metadata, language, identifier, title, pages, coverIndex }));
       put("nav.xhtml", buildNavXhtml({

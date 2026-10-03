@@ -1,6 +1,7 @@
 (function (Tojiru) {
   const D = Tojiru.domain;
   const { escapeXml } = Tojiru.infra.xml;
+  const { writeArchive } = Tojiru.infra.zipstream;
   const EPUB_MEDIA_TYPE = "application/epub+zip";
   const EPUB_CONTENT_DIR = "OEBPS";
   const EPUB_READING_SHARE = 40;
@@ -182,7 +183,10 @@ ${position}`;
     const modified = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
     const { width, height } = pages[0];
     const pageItems = pages
-      .map((page) => `    <item id="${page.id}" href="${page.href}" media-type="application/xhtml+xml"/>\n`)
+      .map(
+        (page) =>
+          `    <item id="${page.id}" href="${page.href}" media-type="application/xhtml+xml" properties="svg"/>\n`,
+      )
       .join("");
     const imageItems = pages
       .map((page, index) => {
@@ -217,7 +221,37 @@ ${spineItems}  </spine>
 `;
   }
 
-  function createEpubFormat({ getJsZip, imageDecoder, generateUuid }) {
+  function buildEntries({ output, pages, navEntries, coverIndex, identifier }) {
+    const { metadata, language } = output;
+    const title = metadata.series || D.DEFAULT_OUTPUT_NAME;
+    const inContent = (path, source, options = EPUB_FILE_OPTIONS) => ({
+      path: `${EPUB_CONTENT_DIR}/${path}`,
+      source,
+      options,
+    });
+    return [
+      { path: "mimetype", source: EPUB_MEDIA_TYPE, options: EPUB_STORED_OPTIONS },
+      { path: "META-INF/container.xml", source: EPUB_CONTAINER_XML, options: EPUB_FILE_OPTIONS },
+      inContent("content.opf", buildPackageOpf({ metadata, language, identifier, title, pages, coverIndex })),
+      inContent(
+        "nav.xhtml",
+        buildNavXhtml({
+          entries: navEntries,
+          landmarks: createLandmarks(output, navEntries, pages, coverIndex),
+          contentsLabel: output.labels.contents,
+          language,
+        }),
+      ),
+      inContent("toc.ncx", buildNcx(navEntries, identifier, title)),
+      inContent("style.css", EPUB_STYLESHEET),
+      ...pages.flatMap((page) => [
+        inContent(page.href, buildPageXhtml(page, language)),
+        inContent(page.imagePath, page.data, EPUB_STORED_OPTIONS),
+      ]),
+    ];
+  }
+
+  function createEpubFormat({ getJsZip, imageDecoder, generateUuid, createSink = null }) {
     async function prepareAllImages(pages, onProgress) {
       const images = [];
       for (const [index, page] of pages.entries()) {
@@ -232,45 +266,30 @@ ${spineItems}  </spine>
       return images;
     }
 
-    async function write(output, onProgress) {
+    async function writeToMemory(entries, report) {
+      const zip = new (getJsZip())();
+      entries.forEach((entry) => zip.file(entry.path, entry.source, entry.options));
+      return zip.generateAsync({ type: "blob", mimeType: EPUB_MEDIA_TYPE, compression: "DEFLATE" }, (meta) =>
+        report(meta.percent),
+      );
+    }
+
+    async function write(output, onProgress, { fileName = "output.epub" } = {}) {
       const images = await prepareAllImages(output.pages, onProgress);
       const pages = createPages(output, images);
       const navEntries = createNavEntries(output, pages);
       const coverIndex = findCoverPageIndex(output);
-      const { metadata, language } = output;
-      const title = metadata.series || D.DEFAULT_OUTPUT_NAME;
       const identifier = `urn:uuid:${generateUuid()}`;
-
-      const zip = new (getJsZip())();
-      const put = (path, content, options = EPUB_FILE_OPTIONS) =>
-        zip.file(`${EPUB_CONTENT_DIR}/${path}`, content, options);
-      zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS);
-      zip.file("META-INF/container.xml", EPUB_CONTAINER_XML, EPUB_FILE_OPTIONS);
-      put("content.opf", buildPackageOpf({ metadata, language, identifier, title, pages, coverIndex }));
-      put(
-        "nav.xhtml",
-        buildNavXhtml({
-          entries: navEntries,
-          landmarks: createLandmarks(output, navEntries, pages, coverIndex),
-          contentsLabel: output.labels.contents,
-          language,
-        }),
-      );
-      put("toc.ncx", buildNcx(navEntries, identifier, title));
-      put("style.css", EPUB_STYLESHEET);
-      pages.forEach((page) => {
-        put(page.href, buildPageXhtml(page, language));
-        put(page.imagePath, page.data, EPUB_STORED_OPTIONS);
+      const entries = buildEntries({ output, pages, navEntries, coverIndex, identifier });
+      const report = (percent) =>
+        onProgress({ stage: "packing", percent: EPUB_READING_SHARE + (percent * (100 - EPUB_READING_SHARE)) / 100 });
+      const blob = await writeArchive({
+        entries,
+        createSink,
+        fileName,
+        onProgress: report,
+        writeToMemory: () => writeToMemory(entries, report),
       });
-
-      const blob = await zip.generateAsync(
-        { type: "blob", mimeType: EPUB_MEDIA_TYPE, compression: "DEFLATE" },
-        (meta) =>
-          onProgress({
-            stage: "packing",
-            percent: EPUB_READING_SHARE + (meta.percent * (100 - EPUB_READING_SHARE)) / 100,
-          }),
-      );
       return { blob, pageCount: pages.length };
     }
 

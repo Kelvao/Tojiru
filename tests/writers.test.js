@@ -3,13 +3,17 @@ const assert = require("node:assert");
 const JSZip = require("jszip");
 const { loadScripts } = require("./load");
 
-const Tojiru = loadScripts([
-  "src/domain/library.js",
-  "src/application/usecases.js",
-  "src/infrastructure/xml.js",
-  "src/infrastructure/cbz.js",
-  "src/infrastructure/epub.js",
-]);
+const Tojiru = loadScripts(
+  [
+    "src/domain/library.js",
+    "src/application/usecases.js",
+    "src/infrastructure/xml.js",
+    "src/infrastructure/zipstream.js",
+    "src/infrastructure/cbz.js",
+    "src/infrastructure/epub.js",
+  ],
+  { TextEncoder },
+);
 const D = Tojiru.domain;
 const getJsZip = () => JSZip;
 
@@ -191,4 +195,143 @@ test("EPUB writer propagates image read errors from the decoder", async () => {
     () => format.write(buildOutput(sampleItems()), () => {}),
     (error) => error.name === "ImageReadError" && error.pageName === "capa.jpg",
   );
+});
+
+function memorySink() {
+  const chunks = [];
+  return {
+    chunks,
+    aborted: false,
+    write: async (bytes) => {
+      chunks.push(Buffer.from(bytes));
+    },
+    close: async () => new Blob(chunks),
+    abort: async function () {
+      this.aborted = true;
+    },
+  };
+}
+
+test("CBZ writer streams to a disk sink and produces the same archive layout", async () => {
+  const sink = memorySink();
+  const requests = [];
+  const createSink = async (request) => {
+    requests.push(request);
+    return sink;
+  };
+  const format = Tojiru.infra.cbz.createCbzFormat({ getJsZip, createSink });
+  const events = [];
+  const { blob, pageCount } = await format.write(buildOutput(sampleItems()), (event) => events.push(event), {
+    fileName: "Meu Manga.cbz",
+  });
+  const zip = await JSZip.loadAsync(await blob.arrayBuffer(), { checkCRC32: true });
+  assert.equal(pageCount, 6);
+  assert.deepEqual(Object.keys(zip.files), [
+    "0000.jpg",
+    "0001.jpg",
+    "0002.jpg",
+    "0003.jpg",
+    "0004.jpg",
+    "0005.jpg",
+    "ComicInfo.xml",
+  ]);
+  assert.equal(await zip.file("0002.jpg").async("string"), "M/Cap 1/1.jpg");
+  assert.match(await zip.file("ComicInfo.xml").async("string"), /<PageCount>6<\/PageCount>/);
+  assert.equal(requests[0].fileName, "Meu Manga.cbz");
+  const output = buildOutput(sampleItems());
+  const pagesBytes = output.pages.reduce((sum, item) => sum + item.source.length, 0);
+  assert.equal(requests[0].requiredBytes, pagesBytes + Tojiru.infra.cbz.buildComicInfoXml(output).length);
+  assert.equal(events.at(-1).percent, 100);
+  assert.ok(events.every((event) => event.stage === "packing"));
+  assert.equal(sink.aborted, false);
+});
+
+test("CBZ writer falls back to memory when the disk sink cannot be created", async () => {
+  const createSink = async () => {
+    throw new Error("OPFS unavailable");
+  };
+  const format = Tojiru.infra.cbz.createCbzFormat({ getJsZip, createSink });
+  const { blob, pageCount } = await format.write(buildOutput(sampleItems()), () => {});
+  const zip = await open(blob);
+  assert.equal(pageCount, 6);
+  assert.equal(await zip.file("0002.jpg").async("string"), "M/Cap 1/1.jpg");
+});
+
+test("CBZ writer aborts the sink and falls back to memory when a disk write fails", async () => {
+  const sink = memorySink();
+  sink.write = async () => {
+    throw new Error("QuotaExceededError");
+  };
+  const format = Tojiru.infra.cbz.createCbzFormat({ getJsZip, createSink: async () => sink });
+  const { blob } = await format.write(buildOutput(sampleItems()), () => {});
+  const zip = await open(blob);
+  assert.equal(sink.aborted, true);
+  assert.equal(await zip.file("0000.jpg").async("string"), "M/capa.jpg");
+});
+
+const withoutTimestamp = (bytes) =>
+  Buffer.from(bytes.toString("latin1").replace(/(dcterms:modified">)[^<]+/, "$1"), "latin1");
+
+async function epubAsMemoryAndDisk(sinkOverride) {
+  const sink = sinkOverride ?? memorySink();
+  const options = { getJsZip, imageDecoder: fakeDecoder({ "2.jpg": [1800, 1200] }), generateUuid: () => "fixed-uuid" };
+  const output = buildOutput(sampleItems());
+  const memory = await Tojiru.infra.epub.createEpubFormat(options).write(output, () => {});
+  const events = [];
+  const requests = [];
+  const createSink = async (request) => {
+    requests.push(request);
+    return sink;
+  };
+  const disk = await Tojiru.infra.epub
+    .createEpubFormat({ ...options, createSink })
+    .write(output, (event) => events.push(event), { fileName: "Meu Manga.epub" });
+  return { memory, disk, sink, events, requests };
+}
+
+test("EPUB writer streams to a disk sink with the same entries and contents as the memory path", async () => {
+  const { memory, disk, events, requests } = await epubAsMemoryAndDisk();
+  const memoryZip = await open(memory.blob);
+  const diskZip = await JSZip.loadAsync(await disk.blob.arrayBuffer(), { checkCRC32: true });
+  assert.equal(disk.pageCount, 6);
+  assert.deepEqual(Object.keys(diskZip.files), Object.keys(memoryZip.files));
+  for (const name of Object.keys(memoryZip.files)) {
+    const expected = withoutTimestamp(await memoryZip.file(name).async("nodebuffer"));
+    const actual = withoutTimestamp(await diskZip.file(name).async("nodebuffer"));
+    assert.ok(actual.equals(expected), `${name} differs`);
+  }
+  assert.equal(requests[0].fileName, "Meu Manga.epub");
+  assert.ok(requests[0].requiredBytes > 0);
+  const stages = events.map((event) => event.stage);
+  assert.equal(stages[0], "reading");
+  assert.equal(stages.at(-1), "packing");
+  assert.equal(events.at(-1).percent, 100);
+  const percents = events.map((event) => event.percent);
+  assert.deepEqual(
+    percents,
+    [...percents].sort((a, b) => a - b),
+  );
+});
+
+test("EPUB disk archive keeps the OCF signature: mimetype first, stored, no extra field, no data descriptor", async () => {
+  const { disk } = await epubAsMemoryAndDisk();
+  const bytes = Buffer.from(await disk.blob.arrayBuffer());
+  assert.equal(bytes.readUInt32LE(0), 0x04034b50);
+  assert.equal(bytes.readUInt16LE(6) & 0x0008, 0);
+  assert.equal(bytes.readUInt16LE(8), 0);
+  assert.equal(bytes.readUInt16LE(28), 0);
+  assert.equal(bytes.toString("latin1", 30, 38), "mimetype");
+  assert.equal(bytes.toString("latin1", 38, 58), "application/epub+zip");
+});
+
+test("EPUB writer falls back to memory when a disk write fails", async () => {
+  const sink = memorySink();
+  sink.write = async () => {
+    throw new Error("QuotaExceededError");
+  };
+  const { disk } = await epubAsMemoryAndDisk(sink);
+  const zip = await open(disk.blob);
+  assert.equal(sink.aborted, true);
+  assert.equal(Object.keys(zip.files)[0], "mimetype");
+  assert.equal(await zip.file("OEBPS/images/0001.jpg").async("string"), "M/capa.jpg");
 });

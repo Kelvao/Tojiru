@@ -87,8 +87,8 @@
       async generate({ rawMetadata, onProgress }) {
         const format = formats[store.get().outputFormat];
         const output = outputFor(rawMetadata);
-        const { blob, pageCount } = await format.write(output, onProgress);
         const fileName = D.outputFileName(output.metadata.series, format.extension);
+        const { blob, pageCount } = await format.write(output, onProgress, { fileName });
         saver.save(blob, fileName);
         return { fileName, pageCount, size: blob.size };
       },

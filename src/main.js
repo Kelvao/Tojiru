@@ -1,8 +1,14 @@
 (function (Tojiru) {
   const { createStore, createUseCases } = Tojiru.usecases;
   const { DEFAULT_LANGUAGE, LANGUAGES, TRANSLATIONS, detectLanguage, createTranslator } = Tojiru.i18n;
-  const { pagesFromFileList, createBlobSaver, createLanguageStore, createPreviewUrls, generateUuid } =
-    Tojiru.infra.browser;
+  const {
+    pagesFromFileList,
+    createBlobSaver,
+    createOpfsStorage,
+    createLanguageStore,
+    createPreviewUrls,
+    generateUuid,
+  } = Tojiru.infra.browser;
   const { createImageDecoder } = Tojiru.infra.images;
   const { createCbzFormat } = Tojiru.infra.cbz;
   const { createEpubFormat } = Tojiru.infra.epub;
@@ -29,9 +35,11 @@
   });
 
   const imageDecoder = createImageDecoder({ documentRef: document });
+  const opfs = createOpfsStorage({ navigatorRef: navigator });
+  opfs.purge();
   const formats = {
-    cbz: createCbzFormat({ getJsZip: requireJsZip }),
-    epub: createEpubFormat({ getJsZip: requireJsZip, imageDecoder, generateUuid }),
+    cbz: createCbzFormat({ getJsZip: requireJsZip, createSink: opfs.createSink }),
+    epub: createEpubFormat({ getJsZip: requireJsZip, imageDecoder, generateUuid, createSink: opfs.createSink }),
   };
 
   const store = createStore({ items: [], folderLoaded: false, outputFormat: DEFAULT_OUTPUT_FORMAT });

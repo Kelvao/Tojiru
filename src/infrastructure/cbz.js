@@ -1,6 +1,7 @@
 (function (Tojiru) {
   const D = Tojiru.domain;
   const { escapeXml } = Tojiru.infra.xml;
+  const { writeArchive } = Tojiru.infra.zipstream;
   const COMIC_INFO_FILE = "ComicInfo.xml";
   const MIN_PAGE_NUMBER_WIDTH = 4;
   const FRONT_COVER_TYPE = "FrontCover";
@@ -51,16 +52,40 @@
     return `${String(index).padStart(width, "0")}.${D.extensionOf(page.name)}`;
   }
 
-  function createCbzFormat({ getJsZip }) {
-    async function write(output, onProgress) {
+  const pageNumberWidth = (output) => Math.max(MIN_PAGE_NUMBER_WIDTH, String(output.pages.length).length);
+
+  function buildEntries(output) {
+    const width = pageNumberWidth(output);
+    return [
+      ...output.pages.map((page, index) => ({
+        path: pageFileName(index, width, page),
+        source: page.source,
+        options: STORE_ONLY,
+      })),
+      { path: COMIC_INFO_FILE, source: buildComicInfoXml(output), options: {} },
+    ];
+  }
+
+  function createCbzFormat({ getJsZip, createSink = null }) {
+    async function writeToMemory(entries, report) {
       const zip = new (getJsZip())();
-      const width = Math.max(MIN_PAGE_NUMBER_WIDTH, String(output.pages.length).length);
-      output.pages.forEach((page, index) => zip.file(pageFileName(index, width, page), page.source, STORE_ONLY));
-      zip.file(COMIC_INFO_FILE, buildComicInfoXml(output));
-      onProgress({ stage: "packing", percent: 0 });
-      const blob = await zip.generateAsync({ type: "blob", compression: "STORE", streamFiles: true }, (meta) =>
-        onProgress({ stage: "packing", percent: meta.percent }),
+      entries.forEach((entry) => zip.file(entry.path, entry.source, entry.options));
+      report(0);
+      return zip.generateAsync({ type: "blob", compression: "STORE", streamFiles: true }, (meta) =>
+        report(meta.percent),
       );
+    }
+
+    async function write(output, onProgress, { fileName = "output.cbz" } = {}) {
+      const entries = buildEntries(output);
+      const report = (percent) => onProgress({ stage: "packing", percent });
+      const blob = await writeArchive({
+        entries,
+        createSink,
+        fileName,
+        onProgress: report,
+        writeToMemory: () => writeToMemory(entries, report),
+      });
       return { blob, pageCount: output.pages.length };
     }
 

@@ -21,12 +21,24 @@
   padding: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
-svg {
-  display: block;
+.page-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
+}
+
+.page-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 `;
 
@@ -77,11 +89,8 @@ svg {
   <meta name="viewport" content="width=${page.width}, height=${page.height}"/>
   <link rel="stylesheet" type="text/css" href="../style.css"/>
 </head>
-<body>
-  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="100%" height="100%" viewBox="0 0 ${page.width} ${page.height}" preserveAspectRatio="xMidYMid meet">
-    <title>${title}</title>
-    <image width="${page.width}" height="${page.height}" xlink:href="../${page.imagePath}"/>
-  </svg>
+<body class="page-body">
+    <image class="page-img" src="../${page.imagePath}" alt="${title}"/>
 </body>
 </html>
 `;
@@ -171,7 +180,7 @@ ${position}`;
     const year = /^\d{4}$/.test(metadata.year) ? metadata.year : "";
     const modified = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
     const pageItems = pages
-      .map((page) => `    <item id="${page.id}" href="${page.href}" media-type="application/xhtml+xml" properties="svg"/>\n`)
+      .map((page) => `    <item id="${page.id}" href="${page.href}" media-type="application/xhtml+xml"/>\n`)
       .join("");
     const imageItems = pages
       .map((page, index) => {

@@ -93,21 +93,70 @@
 <section class="grp">
 <div class="gt"><h2 data-i18n="section.details"></h2></div>
 <div class="card">
-<div class="er"><label for="series" data-i18n="field.title"></label><input id="series"></div>
-<div class="er"><label for="writer" data-i18n="field.author"></label><input id="writer"></div>
-<div class="er"><label for="penciller" data-i18n="field.artist"></label><input id="penciller"></div>
-<div class="er"><label for="genre" data-i18n="field.genres"></label><input id="genre"></div>
-<div class="er"><label for="publisher" data-i18n="field.publisher"></label><input id="publisher"></div>
-<div class="er"><label for="year" data-i18n="field.year"></label><input id="year" type="number"></div>
-<div class="er"><label for="lang" data-i18n="field.language"></label><input id="lang"></div>
-<div class="er"><label for="volume" data-i18n="field.volume"></label><input id="volume" type="number"></div>
-<div class="er"><label for="manga" data-i18n="field.reading"></label>
-<select id="manga">
+<div class="er" data-field="series">
+<div class="er-head"><label for="series" data-i18n="field.title"></label><span class="tag"></span></div>
+<input id="series" aria-describedby="hint-series" data-i18n-placeholder="placeholder.series">
+<div class="hint" id="hint-series" data-i18n="hint.series"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="writer">
+<div class="er-head"><label for="writer" data-i18n="field.author"></label><span class="tag"></span></div>
+<input id="writer" aria-describedby="hint-writer" data-i18n-placeholder="placeholder.writer">
+<div class="hint" id="hint-writer" data-i18n="hint.writer"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="penciller">
+<div class="er-head"><label for="penciller" data-i18n="field.artist"></label><span class="tag"></span></div>
+<input id="penciller" aria-describedby="hint-penciller" data-i18n-placeholder="placeholder.penciller">
+<div class="hint" id="hint-penciller" data-i18n="hint.penciller"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="genres">
+<div class="er-head"><label for="genre" data-i18n="field.genres"></label><span class="tag"></span></div>
+<input id="genre" aria-describedby="hint-genres" data-i18n-placeholder="placeholder.genres">
+<div class="hint" id="hint-genres" data-i18n="hint.genres"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="publisher">
+<div class="er-head"><label for="publisher" data-i18n="field.publisher"></label><span class="tag"></span></div>
+<input id="publisher" aria-describedby="hint-publisher" data-i18n-placeholder="placeholder.publisher">
+<div class="hint" id="hint-publisher" data-i18n="hint.publisher"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="year">
+<div class="er-head"><label for="year" data-i18n="field.year"></label><span class="tag"></span></div>
+<input id="year" type="number" aria-describedby="hint-year" data-i18n-placeholder="placeholder.year">
+<div class="hint" id="hint-year" data-i18n="hint.year"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="language">
+<div class="er-head"><label for="lang" data-i18n="field.language"></label><span class="tag"></span></div>
+<input id="lang" aria-describedby="hint-language" data-i18n-placeholder="placeholder.language">
+<div class="hint" id="hint-language" data-i18n="hint.language"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="volume">
+<div class="er-head"><label for="volume" data-i18n="field.volume"></label><span class="tag"></span></div>
+<input id="volume" type="number" aria-describedby="hint-volume" data-i18n-placeholder="placeholder.volume">
+<div class="hint" id="hint-volume" data-i18n="hint.volume"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="readingMode">
+<div class="er-head"><label for="manga" data-i18n="field.reading"></label><span class="tag"></span></div>
+<select id="manga" aria-describedby="hint-readingMode">
 <option value="YesAndRightToLeft" data-i18n="reading.rtl"></option>
 <option value="Yes" data-i18n="reading.ltr"></option>
 <option value="No" data-i18n="reading.none"></option>
-</select></div>
-<div class="er"><label for="summary" data-i18n="field.summary"></label><textarea id="summary"></textarea></div>
+</select>
+<div class="hint" id="hint-readingMode" data-i18n="hint.readingMode"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
+<div class="er" data-field="summary">
+<div class="er-head"><label for="summary" data-i18n="field.summary"></label><span class="tag"></span></div>
+<textarea id="summary" aria-describedby="hint-summary" data-i18n-placeholder="placeholder.summary"></textarea>
+<div class="hint" id="hint-summary" data-i18n="hint.summary"></div>
+<div class="field-error" role="alert" data-i18n="error.required"></div>
+</div>
 </div>
 </section>
 </div>
@@ -150,7 +199,11 @@
 </div>
 <div class="dbody">
 <div class="card">
-<div class="er"><label for="pickName" data-i18n="picker.name"></label><input id="pickName" data-i18n-placeholder="picker.namePlaceholder"></div>
+<div class="er">
+<div class="er-head"><label for="pickName" data-i18n="picker.name"></label><span class="tag" data-i18n="field.optional"></span></div>
+<input id="pickName" aria-describedby="hint-pickName" data-i18n-placeholder="picker.namePlaceholder">
+<div class="hint" id="hint-pickName" data-i18n="picker.nameHint"></div>
+</div>
 <div class="er"><label for="pickKind" data-i18n="picker.kind"></label><select id="pickKind"></select></div>
 </div>
 <div id="pickPages"></div>

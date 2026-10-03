@@ -142,3 +142,17 @@ test("isImageName and extensionOf", () => {
   assert.ok(!D.isImageName("a.txt"));
   assert.equal(D.extensionOf("A.WebP"), "webp");
 });
+
+test("validateMetadata reports missing required fields only", () => {
+  assert.deepEqual([...D.REQUIRED_FIELDS], ["series"]);
+  assert.deepEqual(D.validateMetadata(D.normalizeMetadata({ series: "  " })).map((p) => ({ ...p })), [{ field: "series", rule: "required" }]);
+  assert.deepEqual([...D.validateMetadata(D.normalizeMetadata({ series: "X" }))], []);
+  assert.deepEqual([...D.validateMetadata(D.normalizeMetadata({ series: "X", writer: "", year: "" }))], []);
+});
+
+test("MetadataError carries the list of problems", () => {
+  const error = new D.MetadataError([{ field: "series", rule: "required" }]);
+  assert.equal(error.message, "Invalid metadata");
+  assert.equal(error.name, "MetadataError");
+  assert.equal(error.problems[0].field, "series");
+});

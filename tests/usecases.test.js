@@ -119,3 +119,21 @@ test("titleOf prefers the typed title and falls back to the default name", () =>
   assert.equal(U.titleOf(items[1], items, translator.t), "kind.chapter.name 1");
   assert.equal(U.titleOf({ ...items[1], title: "  Meu " }, items, translator.t), "Meu");
 });
+
+test("generate refuses to run without the required fields and touches neither writer nor saver", async () => {
+  const { useCases, saved, written } = setup();
+  useCases.loadFolder(sampleFolder);
+  await assert.rejects(
+    () => useCases.generate({ rawMetadata: { series: "   " }, onProgress: () => {} }),
+    (error) => error instanceof D.MetadataError && error.problems[0].field === "series",
+  );
+  assert.equal(written.length, 0);
+  assert.equal(saved.length, 0);
+});
+
+test("exportSidecar also requires the title", () => {
+  const { useCases, saved } = setup();
+  useCases.loadFolder(sampleFolder);
+  assert.throws(() => useCases.exportSidecar({ series: "" }), (error) => error instanceof D.MetadataError);
+  assert.equal(saved.length, 0);
+});

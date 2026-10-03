@@ -767,6 +767,7 @@ button.flat:hover {
 
 :root {
   --page-max: 720px;
+  --error: #ff7b63;
 }
 
 @media (min-width:1100px) {
@@ -918,4 +919,58 @@ button.flat:hover {
   .seg button {
     min-height: 38px;
   }
+}
+
+.er-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tag {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--btn);
+  color: var(--mu);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tag.required {
+  background: rgba(145,65,172,.3);
+  color: var(--actx);
+}
+
+.hint {
+  margin-top: 2px;
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.field-error {
+  display: none;
+  margin-top: 2px;
+  color: var(--error);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.er.invalid {
+  outline: 2px solid var(--error);
+  outline-offset: -2px;
+}
+
+.er.invalid .hint {
+  display: none;
+}
+
+.er.invalid .field-error {
+  display: block;
+}
+
+.er.invalid .tag.required {
+  background: rgba(255,123,99,.2);
+  color: var(--error);
 }

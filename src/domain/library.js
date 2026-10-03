@@ -31,6 +31,16 @@
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
+  const REQUIRED_FIELDS = Object.freeze(["series"]);
+
+  class MetadataError extends Error {
+    constructor(problems) {
+      super("Invalid metadata");
+      this.name = "MetadataError";
+      this.problems = problems;
+    }
+  }
+
   class ImageReadError extends Error {
     constructor(pageName) {
       super(`Could not read image ${pageName}`);
@@ -201,6 +211,10 @@
     };
   }
 
+  function validateMetadata(metadata) {
+    return REQUIRED_FIELDS.filter((field) => !metadata[field]).map((field) => ({ field, rule: "required" }));
+  }
+
   function outputFileName(series, extension) {
     const baseName = (series || DEFAULT_OUTPUT_NAME).replace(FILE_NAME_FORBIDDEN_CHARS, "_");
     return `${baseName}.${extension}`;
@@ -213,6 +227,8 @@
     ReadingMode,
     ALL_KINDS,
     MANUAL_KINDS,
+    REQUIRED_FIELDS,
+    MetadataError,
     ImageReadError,
     isImageName,
     extensionOf,
@@ -234,6 +250,7 @@
     extractPages,
     restoreItem,
     normalizeMetadata,
+    validateMetadata,
     outputFileName,
   };
 })((window.Tojiru = window.Tojiru || {}));

@@ -50,6 +50,8 @@
 
     function outputFor(rawMetadata) {
       const metadata = D.normalizeMetadata(rawMetadata);
+      const problems = D.validateMetadata(metadata);
+      if (problems.length) throw new D.MetadataError(problems);
       return buildOutputDocument({ items: store.get().items, metadata, translator });
     }
 

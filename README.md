@@ -41,13 +41,32 @@ A lista do índice usa container queries: conforme a largura disponível, ela se
 
 1. Abra `index.html` no navegador.
 2. Em **Pasta do mangá**, escolha a pasta raiz.
-3. Em **Informações**, preencha título, autor, gêneros e demais campos.
+3. Em **Informações**, preencha os campos. Cada um mostra uma etiqueta **Obrigatório** ou **Opcional** e uma dica de como preencher. O título já vem do nome da pasta.
 4. Em **Índice**, revise os itens detectados:
    - digite o nome de cada capítulo, ou use **Numerar capítulos**;
    - ajuste o **Tipo** de cada item (Capítulo, Capa, Índice, Extra, Contracapa);
    - reordene com ▲ e ▼.
 5. Se a capa ou o índice estiverem dentro da pasta de um capítulo, use **Novo item** (veja abaixo).
 6. Na barra inferior, escolha o formato (**CBZ** ou **EPUB**) e clique em **Gerar**. O download começa quando o empacotamento termina. Com EPUB selecionado, o botão do `ComicInfo.xml` é ocultado, já que o EPUB leva seus metadados no próprio arquivo.
+
+## Campos de informações
+
+| Campo | Obrigatório | Dica exibida | No CBZ (`ComicInfo.xml`) | No EPUB |
+| --- | --- | --- | --- | --- |
+| Título | Sim | Vira o nome do arquivo e o título do livro | `Title`, `Series` | `dc:title`, série |
+| Autor | Não | Quem escreve a história | `Writer` | `dc:creator` (`aut`) |
+| Artista | Não | Quem desenha, se for diferente do autor | `Penciller` | `dc:creator` (`art`) |
+| Gêneros | Não | Separe por vírgula; cada gênero vira uma etiqueta | `Genre` | um `dc:subject` por gênero |
+| Editora | Não | Editora desta edição | `Publisher` | `dc:publisher` |
+| Ano | Não | Ano de publicação, com 4 dígitos | `Year` | `dc:date` (só se tiver 4 dígitos) |
+| Idioma do mangá | Não | Código do idioma, como `pt`, `en` ou `ja` | `LanguageISO` | `dc:language` |
+| Volume | Não | Número do volume, usado na ordem da série | `Volume` | posição na coleção |
+| Leitura | Não | Direção de leitura; padrão da direita para a esquerda | `Manga` | `page-progression-direction` |
+| Sinopse | Não | Texto curto sobre a história | `Summary` | `dc:description` |
+
+Campos opcionais vazios são omitidos do arquivo gerado.
+
+O **Título** é o único obrigatório, porque dá nome ao arquivo e ao livro. Se estiver vazio, **Gerar** e **Baixar ComicInfo.xml** não executam: o campo é destacado em vermelho com a mensagem "Preencha este campo.", o foco vai para ele e o aviso some assim que você começa a digitar. As etiquetas vêm da lista de campos obrigatórios do domínio, então a tela e a validação não divergem.
 
 ## Estrutura de pastas esperada
 
@@ -279,7 +298,7 @@ O código segue os princípios da Clean Architecture, adaptados a um app de nave
 
 | Camada | Arquivos | Responsabilidade | Pode depender de | Não pode usar |
 | --- | --- | --- | --- | --- |
-| Domínio | `src/domain/` | Itens do índice, tipos, detecção por nome, ordenação, criação e desfazer de itens manuais, normalização de metadados | nada | DOM, `window`, JSZip, `File`, `Blob`, tradução |
+| Domínio | `src/domain/` | Itens do índice, tipos, detecção por nome, ordenação, criação e desfazer de itens manuais, normalização e validação de metadados | nada | DOM, `window`, JSZip, `File`, `Blob`, tradução |
 | Aplicação | `src/application/` | Estado (`store`), casos de uso, montagem do documento de saída com títulos já resolvidos | domínio | DOM, JSZip, `Blob`, infraestrutura, interface |
 | Infraestrutura | `src/infrastructure/` | Implementa as portas: escrita de CBZ e EPUB, leitura de imagens, download, armazenamento do idioma | domínio | aplicação, interface |
 | Interface | `src/presentation/` | Renderiza o estado, traduz textos e traduz eventos em chamadas aos casos de uso | aplicação e domínio | infraestrutura, JSZip |
@@ -325,6 +344,7 @@ Ao gerar um arquivo, `useCases.generate` monta o `Output`, entrega ao formato es
 ### Decisões
 
 - **Estado imutável**: as funções do domínio devolvem novas listas e nunca alteram as recebidas.
+- **Validação no domínio**: `REQUIRED_FIELDS` e `validateMetadata` definem o que é obrigatório. O caso de uso lança `MetadataError` e o controller transforma o erro em destaque no campo. A view lê `REQUIRED_FIELDS` para desenhar as etiquetas, em vez de repetir a regra no HTML.
 - **Digitação sem re-render**: renomear um item usa uma atualização silenciosa (`quiet`), para o campo não perder o foco a cada tecla.
 - **Tradução fora do domínio**: títulos padrão ("Capítulo 1", "Capa") são resolvidos na camada de aplicação com o tradutor injetado.
 - **Formatos como plugins**: a interface lê `format.label` e `format.sidecar` de cada formato registrado. Nada na interface cita CBZ ou EPUB.
@@ -350,8 +370,8 @@ Requer Node 22 ou mais recente. Cobertura:
 
 | Arquivo | O que verifica |
 | --- | --- |
-| `tests/domain.test.js` | Detecção de tipos, agrupamento e ordenação, página inicial de cada item, criação e desfazer de itens manuais, numeração, movimentação, metadados e nomes de arquivo. O domínio é carregado sem nenhuma API do navegador. |
-| `tests/usecases.test.js` | Store e atualizações silenciosas, casos de uso com formato e salvador falsos, montagem do documento de saída. |
+| `tests/domain.test.js` | Detecção de tipos, agrupamento e ordenação, página inicial de cada item, criação e desfazer de itens manuais, numeração, movimentação, metadados, validação e nomes de arquivo. O domínio é carregado sem nenhuma API do navegador. |
+| `tests/usecases.test.js` | Store e atualizações silenciosas, casos de uso com formato e salvador falsos, montagem do documento de saída e bloqueio da geração sem os campos obrigatórios. |
 | `tests/writers.test.js` | CBZ e ComicInfo.xml, e o pacote EPUB completo (estrutura, nav, OPF, direção de leitura, `viewBox`, progresso) com um decodificador de imagens falso. |
 | `tests/i18n.test.js` | Detecção de idioma, plural, fallback e equivalência de chaves entre idiomas. |
 | `tests/architecture.test.js` | Regra de dependência, aplicada por pasta: lê todos os arquivos de cada camada e falha se algum usar algo que não pode, por exemplo o domínio acessando `document` ou a interface acessando a infraestrutura. Arquivos novos já entram na verificação. Também falha se houver arquivo fora de uma pasta de camada ou comentário no código. |

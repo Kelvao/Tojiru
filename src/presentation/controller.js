@@ -24,6 +24,26 @@
       return { key: "status.error", params: { message: error.message } };
     }
 
+    function handleFailure(error) {
+      if (error instanceof D.MetadataError) {
+        view.hideProgress();
+        view.showFieldErrors(error.problems);
+        showStatus("status.invalid");
+        return;
+      }
+      const { key, params } = describeError(error);
+      showStatus(key, params);
+    }
+
+    function onExportSidecar() {
+      view.clearFieldErrors();
+      try {
+        useCases.exportSidecar(view.readMetadataForm());
+      } catch (error) {
+        handleFailure(error);
+      }
+    }
+
     const intents = {
       onMove: (index, offset) => useCases.moveItem(index, offset),
       onRename: (index, title) => useCases.renameItem(index, title),
@@ -65,14 +85,14 @@
     }
 
     async function onGenerate() {
+      view.clearFieldErrors();
       view.setGenerating(true);
       view.resetProgress();
       try {
         const result = await useCases.generate({ rawMetadata: view.readMetadataForm(), onProgress: handleProgress });
         showStatus("status.done", { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) });
       } catch (error) {
-        const { key, params } = describeError(error);
-        showStatus(key, params);
+        handleFailure(error);
       } finally {
         view.setGenerating(false);
       }
@@ -100,7 +120,7 @@
       elements.folderInput.addEventListener("change", onFolderSelected);
       elements.numberButton.addEventListener("click", () => useCases.numberChapters());
       elements.clearButton.addEventListener("click", () => useCases.clearTitles());
-      elements.sidecarButton.addEventListener("click", () => useCases.exportSidecar(view.readMetadataForm()));
+      elements.sidecarButton.addEventListener("click", onExportSidecar);
       elements.generateButton.addEventListener("click", onGenerate);
       elements.formatButtons.forEach((button) => {
         button.addEventListener("click", () => useCases.selectOutputFormat(button.dataset.format));

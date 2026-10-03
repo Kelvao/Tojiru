@@ -158,6 +158,36 @@
       elements.generateButton.textContent = t("action.generate", { format: format.label });
     }
 
+    const fieldRows = () => documentRef.querySelectorAll("[data-field]");
+    const fieldRow = (field) => documentRef.querySelector(`[data-field="${field}"]`);
+    const controlOf = (row) => row.querySelector("input, select, textarea");
+
+    function renderFieldTags() {
+      fieldRows().forEach((row) => {
+        const required = D.REQUIRED_FIELDS.includes(row.dataset.field);
+        const tag = row.querySelector(".tag");
+        tag.textContent = t(required ? "field.required" : "field.optional");
+        tag.classList.toggle("required", required);
+      });
+    }
+
+    function clearFieldError(row) {
+      row.classList.remove("invalid");
+      controlOf(row).removeAttribute("aria-invalid");
+    }
+
+    const clearFieldErrors = () => fieldRows().forEach(clearFieldError);
+
+    function showFieldErrors(problems) {
+      clearFieldErrors();
+      problems.forEach(({ field }) => {
+        const row = fieldRow(field);
+        row.classList.add("invalid");
+        controlOf(row).setAttribute("aria-invalid", "true");
+      });
+      if (problems.length) controlOf(fieldRow(problems[0].field)).focus();
+    }
+
     function applyStaticTranslations() {
       documentRef.documentElement.lang = translator.language;
       documentRef.title = t("app.title");
@@ -171,6 +201,7 @@
         element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
         element.title = t(element.dataset.i18nAriaLabel);
       });
+      renderFieldTags();
     }
 
     function renderLanguageCode(languages) {
@@ -185,6 +216,8 @@
       elements.progress.value = 0;
       elements.progress.classList.remove(HIDDEN_CLASS);
     }
+
+    const hideProgress = () => elements.progress.classList.add(HIDDEN_CLASS);
 
     const showProgress = (percent) => {
       elements.progress.value = percent;
@@ -272,14 +305,19 @@
     const readPickerChoice = () => ({ kind: elements.pickKind.value, title: elements.pickName.value });
     const closePicker = () => elements.picker.close();
 
+    fieldRows().forEach((row) => row.addEventListener("input", () => clearFieldError(row)));
+
     return {
       elements,
+      showFieldErrors,
+      clearFieldErrors,
       applyStaticTranslations,
       renderLanguageCode,
       renderFormat,
       renderLibrary,
       renderStatus,
       resetProgress,
+      hideProgress,
       showProgress,
       setExportEnabled,
       setGenerating,

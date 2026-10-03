@@ -4,13 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tojiru 綴じる</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function () {
   const SCRIPT_CHECKS = [["src/domain/library.js", "domain"], ["src/presentation/i18n.js", "i18n"], ["src/application/usecases.js", "usecases"], ["src/infrastructure/xml.js", "infra.xml"], ["src/infrastructure/browser.js", "infra.browser"], ["src/infrastructure/images.js", "infra.images"], ["src/infrastructure/cbz.js", "infra.cbz"], ["src/infrastructure/epub.js", "infra.epub"], ["src/presentation/view.js", "ui.createView"], ["src/presentation/controller.js", "ui.createController"], ["src/main.js", "started"]];
-  const IGNORED_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
   const problems = [];
   let hasLocalProblem = false;
 
@@ -37,8 +34,7 @@
   window.addEventListener("error", (event) => {
     const source = event.target && (event.target.src || event.target.href);
     if (source) {
-      if (IGNORED_HOSTS.some((host) => source.includes(host))) return;
-      if (source.includes("jszip")) report("JSZip não carregou, precisa de internet para gerar o CBZ / JSZip did not load, internet is needed to generate the CBZ", false);
+      if (source.includes("jszip")) report("JSZip local não carregou / Local JSZip failed to load", false);
       else report("Falha ao carregar / Failed to load: " + source);
       return;
     }
@@ -212,7 +208,7 @@
 </dialog>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
 <script src="src/domain/library.js"></script>
 <script src="src/presentation/i18n.js"></script>
 <script src="src/application/usecases.js"></script>

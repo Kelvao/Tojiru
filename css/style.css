@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../vendor/fonts/inter-latin.woff2") format("woff2");
+}
+
 :root {
   --win: #222226;
   --hb: #2e2e32;
@@ -12,7 +20,7 @@
   --ac: #9141ac;
   --acfg: #fff;
   --actx: #dc8add;
-  --font: "Adwaita Sans",Inter,system-ui,sans-serif;
+  --font: Inter,system-ui,sans-serif;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top,0px);
   padding-bottom: env(safe-area-inset-bottom,0px);

@@ -61,7 +61,7 @@ npm install
 npm test
 ```
 
-É necessária conexão à internet para carregar o JSZip. A fonte externa é opcional e tem fallback para a fonte do sistema.
+O JSZip e a fonte Inter estão incluídos no projeto e são carregados localmente, sem dependência de CDN. Caracteres fora da cobertura do Inter, como japonês, usam as fontes disponíveis no sistema.
 
 ## Licença
 
@@ -69,4 +69,4 @@ O código original deste projeto está sob a [PolyForm Noncommercial License 1.0
 
 ## Privacidade
 
-As imagens são processadas localmente no navegador. O idioma escolhido é salvo no armazenamento local; a página carrega JSZip e, opcionalmente, a fonte a partir de serviços externos.
+As imagens são processadas localmente no navegador. O idioma escolhido é salvo no armazenamento local; nenhuma fonte ou biblioteca é carregada de um serviço externo.

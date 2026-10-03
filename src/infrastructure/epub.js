@@ -89,7 +89,7 @@
   <link rel="stylesheet" type="text/css" href="../style.css"/>
 </head>
 <body class="page-body">
-    <image class="page-img" src="../${page.imagePath}" alt="${title}"/>
+    <img class="page-img" src="../${page.imagePath}" alt="${title}"/>
 </body>
 </html>
 `;

@@ -2,6 +2,8 @@
 
 Organize imagens de mangá e gere um **CBZ** ou **EPUB** com índice e metadados. Tudo é processado no navegador; as imagens não são enviadas a um servidor.
 
+Versão online: [tojiru.pages.dev](https://tojiru.pages.dev/).
+
 ## Começar
 
 1. Abra `index.html` em um navegador com suporte à seleção de pastas (`webkitdirectory`).

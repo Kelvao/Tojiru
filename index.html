@@ -6,10 +6,10 @@
 <title>Tojiru 綴じる</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/style.css">
 <script>
 (function () {
-  const SCRIPT_CHECKS = [["i18n.js", "t"], ["model.js", "buildItems"], ["cbz.js", "buildComicInfoXml"], ["epub.js", "buildEpub"], ["app.js", "refreshLanguage"]];
+  const SCRIPT_CHECKS = [["src/domain/library.js", "domain"], ["src/presentation/i18n.js", "i18n"], ["src/application/usecases.js", "usecases"], ["src/infrastructure/xml.js", "infra.xml"], ["src/infrastructure/browser.js", "infra.browser"], ["src/infrastructure/images.js", "infra.images"], ["src/infrastructure/cbz.js", "infra.cbz"], ["src/infrastructure/epub.js", "infra.epub"], ["src/presentation/view.js", "ui.createView"], ["src/presentation/controller.js", "ui.createController"], ["src/main.js", "started"]];
   const IGNORED_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
   const problems = [];
   let hasLocalProblem = false;
@@ -23,7 +23,7 @@
       (document.body || document.documentElement).append(box);
     }
     const hint = hasLocalProblem
-      ? "\nMantenha index.html, style.css, i18n.js, model.js, cbz.js, epub.js e app.js na mesma pasta. / Keep index.html, style.css, i18n.js, model.js, cbz.js, epub.js and app.js in the same folder."
+      ? "\nMantenha as pastas css/ e src/ ao lado do index.html, com a estrutura original. / Keep the css/ and src/ folders next to index.html, with their original structure."
       : "";
     box.textContent = "Problema ao carregar / Loading problem:\n- " + problems.join("\n- ") + hint;
   }
@@ -47,9 +47,10 @@
 
   window.addEventListener("load", () => {
     const stylesApplied = getComputedStyle(document.documentElement).getPropertyValue("--win").trim();
-    if (!stylesApplied) report("style.css não aplicado / not applied");
-    SCRIPT_CHECKS.forEach(([file, name]) => {
-      if (typeof window[name] !== "function") report(file + " não carregou / did not load");
+    if (!stylesApplied) report("css/style.css não aplicado / not applied");
+    SCRIPT_CHECKS.forEach(([file, path]) => {
+      const loaded = path.split(".").reduce((scope, key) => (scope ? scope[key] : undefined), window.Tojiru);
+      if (!loaded) report(file + " não carregou / did not load");
     });
   });
 })();
@@ -135,7 +136,7 @@
 <button type="button" role="radio" data-format="cbz" aria-checked="true">CBZ</button>
 <button type="button" role="radio" data-format="epub" aria-checked="false">EPUB</button>
 </div>
-<button id="xml" disabled data-i18n="action.downloadXml"></button>
+<button id="xml" disabled></button>
 <button class="pri" id="go" disabled></button>
 </div>
 </div>
@@ -159,10 +160,16 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="i18n.js"></script>
-<script src="model.js"></script>
-<script src="cbz.js"></script>
-<script src="epub.js"></script>
-<script src="app.js"></script>
+<script src="src/domain/library.js"></script>
+<script src="src/presentation/i18n.js"></script>
+<script src="src/application/usecases.js"></script>
+<script src="src/infrastructure/xml.js"></script>
+<script src="src/infrastructure/browser.js"></script>
+<script src="src/infrastructure/images.js"></script>
+<script src="src/infrastructure/cbz.js"></script>
+<script src="src/infrastructure/epub.js"></script>
+<script src="src/presentation/view.js"></script>
+<script src="src/presentation/controller.js"></script>
+<script src="src/main.js"></script>
 </body>
 </html>

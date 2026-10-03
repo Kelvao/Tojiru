@@ -108,11 +108,11 @@ A interface está disponível em **English** e **Português (Brasil)**.
 
 ### Adicionando um idioma
 
-1. Em `i18n.js`, inclua o idioma em `LANGUAGES` (`code` curto para o botão e `name`).
+1. Em `src/presentation/i18n.js`, inclua o idioma em `LANGUAGES` (`code` curto para o botão e `name`).
 2. Copie o bloco `en` dentro de `TRANSLATIONS` para a nova chave e traduza os valores. As chaves não mudam.
-3. Entradas com forma plural usam as categorias de `Intl.PluralRules` do idioma (`one`, `other` e, quando existir, `few`, `many`...). A categoria `other` é obrigatória.
+3. Entradas com forma plural (objeto em vez de texto) usam as categorias de `Intl.PluralRules` do idioma (`one`, `other` e, quando existir, `few`, `many`...). A categoria `other` é obrigatória.
 
-Chaves ausentes em um idioma caem para o inglês. Textos estáticos do HTML usam `data-i18n` (texto), `data-i18n-placeholder` e `data-i18n-aria-label`. Textos montados em JavaScript usam `t(chave, parâmetros)`, com marcadores `{nome}`.
+Chaves ausentes em um idioma caem para o inglês. Textos estáticos do HTML usam `data-i18n` (texto), `data-i18n-placeholder` e `data-i18n-aria-label`. Textos montados em JavaScript usam `translator.t(chave, parâmetros)`, com marcadores `{nome}`.
 
 ## Formato do ComicInfo.xml
 
@@ -233,106 +233,149 @@ Para usar offline, baixe o `jszip.min.js` para `vendor/` e troque o `src` da tag
 
 ```
 tojiru/
-├── index.html   Estrutura da página e do diálogo "Novo item"
-├── style.css    Tema escuro estilo libadwaita, componentes e responsividade
-├── i18n.js      Traduções, detecção de idioma e função t()
-├── model.js     Itens do índice, tipos, detecção por nome e utilitários comuns
-├── cbz.js       Geração do CBZ e do ComicInfo.xml
-├── epub.js      Geração do EPUB
-├── app.js       Interface, estado e ações
+├── index.html                       Estrutura da página e do diálogo "Novo item"
+├── css/
+│   └── style.css                    Tema escuro estilo libadwaita, componentes e responsividade
+├── src/
+│   ├── domain/
+│   │   └── library.js               Entidades e regras puras
+│   ├── application/
+│   │   └── usecases.js              Store, casos de uso e documento de saída
+│   ├── infrastructure/
+│   │   ├── xml.js                   Escape de XML
+│   │   ├── browser.js               Arquivos, download, idioma salvo, prévias
+│   │   ├── images.js                Decodificação e conversão de imagens
+│   │   ├── cbz.js                   Formato CBZ + ComicInfo.xml
+│   │   └── epub.js                  Formato EPUB
+│   ├── presentation/
+│   │   ├── i18n.js                  Traduções, detecção de idioma e tradutor (puro)
+│   │   ├── view.js                  Renderização do DOM
+│   │   └── controller.js            Eventos, estado de tela e chamadas aos casos de uso
+│   └── main.js                      Raiz de composição: cria e conecta tudo
+├── tests/                           Testes unitários e de arquitetura (Node)
+├── package.json
 └── README.md
 ```
 
-Todos os arquivos ficam na mesma pasta e se referenciam por nome (`href="style.css"`, `src="app.js"`). Basta manter os arquivos juntos, sem subpastas.
+Os arquivos referenciam uns aos outros por caminho relativo ao `index.html` (`href="css/style.css"`, `src="src/main.js"`). Mantenha as pastas `css/` e `src/` ao lado do `index.html`, com a estrutura original. Se um arquivo não for encontrado, a página mostra um aviso com o caminho que falhou. A pasta `tests/` só é usada no desenvolvimento.
 
-Os scripts são arquivos clássicos (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco. Eles compartilham o escopo global e precisam ser carregados nesta ordem: JSZip, `i18n.js`, `model.js`, `cbz.js`, `epub.js` e `app.js`.
+Os scripts são arquivos clássicos (sem módulos ES), para funcionar também ao abrir `index.html` direto do disco. Cada arquivo registra o que expõe no namespace `Tojiru` e lê suas dependências desse namespace, então a ordem de carregamento em `index.html` importa: JSZip, `src/domain/library.js`, `src/presentation/i18n.js`, `src/application/usecases.js`, os cinco arquivos de `src/infrastructure/` (`xml`, `browser`, `images`, `cbz`, `epub`), `src/presentation/view.js`, `src/presentation/controller.js` e `src/main.js`.
 
-### Organização do `i18n.js`
+## Arquitetura
 
-| Bloco | Funções principais |
+O código segue os princípios da Clean Architecture, adaptados a um app de navegador sem etapa de build: camadas por responsabilidade, dependências apontando sempre para dentro e uma raiz de composição que conecta as peças.
+
+```
+                  src/main.js   (raiz de composição)
+              ┌───────────┴───────────┐
+        presentation/            infrastructure/
+   view · controller · i18n   browser · images · xml · cbz · epub
+              │                       │
+              └───────────┬───────────┘
+                  application/usecases.js
+                          │
+                  domain/library.js
+```
+
+| Camada | Arquivos | Responsabilidade | Pode depender de | Não pode usar |
+| --- | --- | --- | --- | --- |
+| Domínio | `src/domain/` | Itens do índice, tipos, detecção por nome, ordenação, criação e desfazer de itens manuais, normalização de metadados | nada | DOM, `window`, JSZip, `File`, `Blob`, tradução |
+| Aplicação | `src/application/` | Estado (`store`), casos de uso, montagem do documento de saída com títulos já resolvidos | domínio | DOM, JSZip, `Blob`, infraestrutura, interface |
+| Infraestrutura | `src/infrastructure/` | Implementa as portas: escrita de CBZ e EPUB, leitura de imagens, download, armazenamento do idioma | domínio | aplicação, interface |
+| Interface | `src/presentation/` | Renderiza o estado, traduz textos e traduz eventos em chamadas aos casos de uso | aplicação e domínio | infraestrutura, JSZip |
+| Composição | `src/main.js` | Escolhe as implementações e injeta as dependências | todas | lógica de negócio |
+
+### Portas (contratos)
+
+As camadas internas definem o formato do que precisam, e a infraestrutura cumpre esses contratos sem importar a aplicação.
+
+| Porta | Forma |
 | --- | --- |
-| Dados | `LANGUAGES`, `TRANSLATIONS` |
-| Detecção | `detectLanguage`, `matchSupportedLanguage`, `readStoredLanguage`, `storeLanguage` |
-| Estado | `setLanguage`, `nextLanguage` |
-| Tradução | `t`, `applyStaticTranslations` |
+| Formato de saída | `{ id, label, extension, sidecar, write(output, onProgress) }`, onde `write` devolve `Promise<{ blob, pageCount }>` e `sidecar` é `null` ou `{ fileName, mediaType, build(output) }` |
+| Salvador de arquivos | `{ save(blob, fileName), saveText({ content, mediaType, fileName }) }` |
+| Tradutor | `{ language, t(chave, parâmetros) }` |
+| Decodificador de imagens | `{ prepare(page) }`, que devolve `{ data, extension, mediaType, width, height }` ou lança `ImageReadError` |
+| Armazenamento de idioma | `{ read(), write(idioma), preferred() }` |
 
-### Organização do `model.js`
-
-Não depende do DOM, exceto por `t()` para nomes de tipos. É usado por `cbz.js`, `epub.js` e `app.js`.
-
-| Bloco | Funções principais |
-| --- | --- |
-| Tipos | `Kind`, `KIND_DEFINITIONS`, `getDefinition`, `isChapter` |
-| Itens | `createItem`, `compareItems`, `buildItems`, `splitByFolder`, `detectKind` |
-| Nomes | `defaultName`, `displayName`, `kindLabel`, `outputBaseName` |
-| Páginas | `countPages`, `computeStartPages` |
-| Utilitários | `escapeXml`, `STORE_ONLY` |
-
-### Organização do `cbz.js`
-
-| Bloco | Funções principais |
-| --- | --- |
-| ComicInfo | `buildComicInfoXml`, `buildPageEntries`, `buildPageEntry`, `xmlTag` |
-| ZIP | `addPagesToZip`, `pageFileName` |
-| Saída | `buildCbz` |
-
-### Organização do `epub.js`
-
-| Bloco | Funções principais |
-| --- | --- |
-| Imagens | `decodeImage`, `prepareImage`, `prepareAllImages`, `toPngBlob` |
-| Estrutura | `createPages`, `createEntries`, `createLandmarks`, `findCoverPageIndex` |
-| Documentos | `buildPageXhtml`, `buildNavXhtml`, `buildNcx`, `buildPackageOpf` |
-| Saída | `buildEpub` |
-
-### Organização do `app.js`
-
-| Bloco | Funções principais |
-| --- | --- |
-| Estado e DOM | `ui`, `items`, `outputFormat`, `readMetadata` |
-| Renderização | `renderItems`, `createItemRow`, `createKindSelect`, `describeSummary` |
-| Novo item | `openPicker`, `createManualItem`, `restoreItem`, `insertByKind` |
-| Formato e geração | `OUTPUT_FORMATS`, `renderFormat`, `setOutputFormat`, `generateOutput`, `handleProgress` |
-| Idioma | `refreshLanguage`, `toggleLanguage`, `folderLabel`, `renderStatus` |
-| Ações e eventos | `onFolderSelected`, `numberChapters`, `downloadBlob`, `bindEvents` |
-
-Um item da lista é um objeto com esta forma:
+Dados que atravessam as camadas:
 
 ```js
-{
-  folder: "Capítulo 01",
-  kind: "chapter",
-  title: "",
-  files: [File, File],
-  manual: true,
-  sources: Map
+Page   = { name, path, source }
+Item   = { folder, kind, title, pages, manual, origins }
+Output = {
+  metadata, language, pages,
+  entries: [{ title, kind, startPage, pages }],
+  labels: { contents, cover, startOfStory }
 }
 ```
 
-`manual` e `sources` existem apenas em itens criados por **Novo item**. `sources` guarda a pasta de origem de cada arquivo, usada por **Desfazer**.
+`source` é o `File` do navegador, tratado como um valor opaco pelo domínio. `origins` existe apenas em itens criados por **Novo item** e guarda a pasta de origem de cada página, usada por **Desfazer**. `Output` já traz os títulos e rótulos traduzidos, então os escritores de CBZ e EPUB não conhecem idiomas.
+
+### Fluxo de uma ação
+
+Exemplo, ao escolher uma pasta:
+
+1. O controller (`src/presentation/controller.js`) recebe o evento e converte os arquivos em `Page` com `pagesFromFileList` (infraestrutura, injetada).
+2. Chama `useCases.loadFolder(pages)`.
+3. O caso de uso aplica `domain.buildItems` e grava o resultado no `store`.
+4. O `store` notifica os assinantes, e o controller manda a `view` renderizar o novo estado.
+
+Ao gerar um arquivo, `useCases.generate` monta o `Output`, entrega ao formato escolhido (`format.write`) e passa o resultado ao salvador de arquivos.
+
+### Decisões
+
+- **Estado imutável**: as funções do domínio devolvem novas listas e nunca alteram as recebidas.
+- **Digitação sem re-render**: renomear um item usa uma atualização silenciosa (`quiet`), para o campo não perder o foco a cada tecla.
+- **Tradução fora do domínio**: títulos padrão ("Capítulo 1", "Capa") são resolvidos na camada de aplicação com o tradutor injetado.
+- **Formatos como plugins**: a interface lê `format.label` e `format.sidecar` de cada formato registrado. Nada na interface cita CBZ ou EPUB.
+- **Sem módulos ES**: para abrir direto do disco. O isolamento vem do namespace `Tojiru` e dos testes de arquitetura.
 
 ### Convenções
 
-- Funções pequenas com uma única responsabilidade. Lógica pura (modelo, XML) separada de DOM e de ações.
-- Constantes nomeadas no lugar de valores literais.
-- Referências ao DOM concentradas no objeto `ui`.
-- Sem comentários no código; os nomes devem explicar a intenção.
+- Funções pequenas com uma única responsabilidade, nomes que explicam a intenção e constantes nomeadas no lugar de valores literais.
+- Sem comentários no código.
+- Lógica pura separada de DOM e de efeitos colaterais.
+- Dependências sempre injetadas por parâmetro, nunca buscadas em variáveis globais (exceto o namespace `Tojiru`, lido no topo de cada arquivo).
+
+## Testes
+
+Os testes usam apenas o executor nativo do Node (`node:test`), sem navegador. O JSZip é a única dependência de desenvolvimento.
+
+```
+npm install
+npm test
+```
+
+Requer Node 22 ou mais recente. Cobertura:
+
+| Arquivo | O que verifica |
+| --- | --- |
+| `tests/domain.test.js` | Detecção de tipos, agrupamento e ordenação, página inicial de cada item, criação e desfazer de itens manuais, numeração, movimentação, metadados e nomes de arquivo. O domínio é carregado sem nenhuma API do navegador. |
+| `tests/usecases.test.js` | Store e atualizações silenciosas, casos de uso com formato e salvador falsos, montagem do documento de saída. |
+| `tests/writers.test.js` | CBZ e ComicInfo.xml, e o pacote EPUB completo (estrutura, nav, OPF, direção de leitura, `viewBox`, progresso) com um decodificador de imagens falso. |
+| `tests/i18n.test.js` | Detecção de idioma, plural, fallback e equivalência de chaves entre idiomas. |
+| `tests/architecture.test.js` | Regra de dependência, aplicada por pasta: lê todos os arquivos de cada camada e falha se algum usar algo que não pode, por exemplo o domínio acessando `document` ou a interface acessando a infraestrutura. Arquivos novos já entram na verificação. Também falha se houver arquivo fora de uma pasta de camada ou comentário no código. |
+
+## Estendendo
 
 ### Adicionando um formato de saída
 
-1. Crie um arquivo com uma função `async buildX(list, metadata, onProgress)` que devolva `{ blob, pageCount }`. `list` é a lista de itens, `metadata` vem de `readMetadata()` e `onProgress` recebe `{ stage, percent, current, total }`, com `stage` igual a `"reading"` ou `"packing"`.
-2. Carregue o arquivo em `index.html`, antes de `app.js`, e inclua-o na lista de verificação do aviso de carregamento.
-3. Registre o formato em `OUTPUT_FORMATS`, em `app.js`, com `extension` e `build`.
-4. Inclua um botão com `data-format` no seletor de formato.
+1. Crie `src/infrastructure/<formato>.js` com uma função `create<Formato>Format({ ...dependências })` que devolva um objeto da porta "Formato de saída". O `write` recebe o `Output` e `onProgress({ stage, percent, current, total })`, com `stage` igual a `"reading"` ou `"packing"`. Depende só do domínio e de ferramentas injetadas.
+2. Carregue o arquivo em `index.html`, antes de `src/presentation/view.js`, e inclua-o na lista `SCRIPT_CHECKS` do aviso de carregamento.
+3. Em `src/main.js`, crie o formato e inclua-o no objeto `formats`.
+4. Inclua um botão com `data-format="<id>"` no seletor de formato do `index.html`.
+5. Escreva testes em `tests/writers.test.js`. O teste de arquitetura já cobre o arquivo novo, porque ele varre a pasta `src/infrastructure/`.
+
+Se o formato gera um arquivo auxiliar (como o ComicInfo.xml do CBZ), declare-o em `sidecar` e a interface mostra o botão de download sozinha.
 
 ### Adicionando um novo tipo de item
 
-1. Inclua o valor em `Kind`.
-2. Inclua a definição em `KIND_DEFINITIONS` (`pageType`, `sortOrder`, `namePattern`).
+1. Inclua o valor em `Kind` e em `KIND_RULES` (`sortOrder`, `namePattern`), em `src/domain/library.js`.
+2. Inclua-o em `ALL_KINDS` e, se puder ser escolhido em **Novo item**, em `MANUAL_KINDS`.
 3. Inclua `kind.<valor>.label` e `kind.<valor>.name` em todos os idiomas de `TRANSLATIONS`.
-4. Se o tipo puder ser escolhido em **Novo item**, inclua-o em `PICKER_KINDS`.
+4. Se o tipo tem `Type` próprio no ComicInfo, inclua-o em `PAGE_TYPES`, em `src/infrastructure/cbz.js`.
 
-A lista de opções do seletor, a ordenação, a detecção por nome e o XML passam a usar a nova definição automaticamente.
+O seletor, a ordenação, a detecção por nome e os escritores passam a usar o novo tipo automaticamente.
 
 ## Limitações
 

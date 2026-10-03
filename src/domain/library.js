@@ -195,7 +195,10 @@
 
   function normalizeMetadata(raw) {
     const text = (value) => String(value ?? "").trim();
-    const genreList = text(raw.genres).split(",").map((genre) => genre.trim()).filter(Boolean);
+    const genreList = text(raw.genres)
+      .split(",")
+      .map((genre) => genre.trim())
+      .filter(Boolean);
     return {
       series: text(raw.series),
       volume: text(raw.volume),

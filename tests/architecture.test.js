@@ -61,9 +61,14 @@ test("only the composition root wires infrastructure into the application", () =
 });
 
 test("source files contain no comments", () => {
-  const files = [...layers.flatMap(({ folder }) => sourceFilesIn(folder).map((file) => `src/${folder}/${file}`)), "src/main.js"];
+  const files = [
+    ...layers.flatMap(({ folder }) => sourceFilesIn(folder).map((file) => `src/${folder}/${file}`)),
+    "src/main.js",
+  ];
   for (const file of files) {
-    const source = readSource(file).replace(/https?:\/\/\S+/g, "").replace(/`[^`]*`/gs, "``");
+    const source = readSource(file)
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/`[^`]*`/gs, "``");
     assert.doesNotMatch(source, /^\s*\/\/|\/\*/m, `${file} has comments`);
   }
 });

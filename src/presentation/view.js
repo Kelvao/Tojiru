@@ -130,7 +130,8 @@
     }
 
     function describeFolder({ items, folderLoaded }) {
-      if (items.length) return `${t("count.items", { n: items.length })}, ${t("count.pages", { n: D.countPages(items) })}.`;
+      if (items.length)
+        return `${t("count.items", { n: items.length })}, ${t("count.pages", { n: D.countPages(items) })}.`;
       return t(folderLoaded ? "folder.noImages" : "folder.hint");
     }
 

@@ -33,7 +33,10 @@ test("buildItems groups by folder and orders cover, contents, chapters, extras, 
     page("M/capa.jpg"),
   ]);
   assert.deepEqual(folders(items), ["capa.jpg", "indice.jpg", "Cap 2", "Cap 10", "extras", "contracapa.jpg"]);
-  assert.deepEqual(items.map((item) => item.kind), ["cover", "toc", "chapter", "chapter", "extra", "back"]);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ["cover", "toc", "chapter", "chapter", "extra", "back"],
+  );
 });
 
 test("buildItems sorts pages naturally inside a folder", () => {
@@ -64,7 +67,10 @@ test("extractPages moves selected pages into a manual item placed by kind", () =
   const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 1/3.jpg")]);
   const pages = D.pagesOf(items);
   const result = D.extractPages(items, [pages[2], pages[1]], { kind: D.Kind.CONTENTS, title: "Sumário" });
-  assert.deepEqual(result.map((item) => item.kind), ["cover", "toc", "chapter"]);
+  assert.deepEqual(
+    result.map((item) => item.kind),
+    ["cover", "toc", "chapter"],
+  );
   assert.equal(result[1].manual, true);
   assert.equal(result[1].title, "Sumário");
   assert.deepEqual(names(result[1]), ["1.jpg", "2.jpg"]);
@@ -76,14 +82,20 @@ test("extractPages moves selected pages into a manual item placed by kind", () =
 test("extractPages drops items left without pages and ignores empty selections", () => {
   const items = D.buildItems([page("M/Cap 1/1.jpg"), page("M/Cap 2/1.jpg")]);
   const emptied = D.extractPages(items, items[0].pages, { kind: D.Kind.EXTRA, title: "" });
-  assert.deepEqual(emptied.map((item) => item.kind), ["chapter", "extra"]);
+  assert.deepEqual(
+    emptied.map((item) => item.kind),
+    ["chapter", "extra"],
+  );
   assert.equal(D.extractPages(items, [], { kind: D.Kind.EXTRA, title: "" }), items);
 });
 
 test("restoreItem returns pages to their folders in order, recreating removed folders", () => {
   const items = D.buildItems([page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 1/3.jpg")]);
   const extracted = D.extractPages(items, [items[0].pages[0], items[0].pages[2]], { kind: D.Kind.EXTRA, title: "" });
-  const restored = D.restoreItem(extracted, extracted.findIndex((item) => item.manual));
+  const restored = D.restoreItem(
+    extracted,
+    extracted.findIndex((item) => item.manual),
+  );
   assert.equal(restored.length, 1);
   assert.deepEqual(names(restored[0]), ["1.jpg", "2.jpg", "3.jpg"]);
 
@@ -102,8 +114,14 @@ test("restoreItem leaves non-manual items alone", () => {
 test("renameChapters numbers only chapters and clearTitles empties every title", () => {
   const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 2/1.jpg")]);
   const numbered = D.renameChapters(items, (n) => `C${n}`);
-  assert.deepEqual(numbered.map((item) => item.title), ["", "C1", "C2"]);
-  assert.deepEqual(D.clearTitles(numbered).map((item) => item.title), ["", "", ""]);
+  assert.deepEqual(
+    numbered.map((item) => item.title),
+    ["", "C1", "C2"],
+  );
+  assert.deepEqual(
+    D.clearTitles(numbered).map((item) => item.title),
+    ["", "", ""],
+  );
 });
 
 test("moveItem swaps neighbours, never mutates and ignores out-of-range moves", () => {
@@ -145,7 +163,10 @@ test("isImageName and extensionOf", () => {
 
 test("validateMetadata reports missing required fields only", () => {
   assert.deepEqual([...D.REQUIRED_FIELDS], ["series"]);
-  assert.deepEqual(D.validateMetadata(D.normalizeMetadata({ series: "  " })).map((p) => ({ ...p })), [{ field: "series", rule: "required" }]);
+  assert.deepEqual(
+    D.validateMetadata(D.normalizeMetadata({ series: "  " })).map((p) => ({ ...p })),
+    [{ field: "series", rule: "required" }],
+  );
   assert.deepEqual([...D.validateMetadata(D.normalizeMetadata({ series: "X" }))], []);
   assert.deepEqual([...D.validateMetadata(D.normalizeMetadata({ series: "X", writer: "", year: "" }))], []);
 });

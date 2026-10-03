@@ -5,7 +5,8 @@
   const MIN_PAGE_NUMBER_WIDTH = 4;
   const FRONT_COVER_TYPE = "FrontCover";
   const STORE_ONLY = { compression: "STORE" };
-  const XML_HEADER = '<?xml version="1.0" encoding="utf-8"?>\n<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n';
+  const XML_HEADER =
+    '<?xml version="1.0" encoding="utf-8"?>\n<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n';
 
   const PAGE_TYPES = {
     [D.Kind.COVER]: FRONT_COVER_TYPE,
@@ -57,9 +58,8 @@
       output.pages.forEach((page, index) => zip.file(pageFileName(index, width, page), page.source, STORE_ONLY));
       zip.file(COMIC_INFO_FILE, buildComicInfoXml(output));
       onProgress({ stage: "packing", percent: 0 });
-      const blob = await zip.generateAsync(
-        { type: "blob", compression: "STORE", streamFiles: true },
-        (meta) => onProgress({ stage: "packing", percent: meta.percent }),
+      const blob = await zip.generateAsync({ type: "blob", compression: "STORE", streamFiles: true }, (meta) =>
+        onProgress({ stage: "packing", percent: meta.percent }),
       );
       return { blob, pageCount: output.pages.length };
     }

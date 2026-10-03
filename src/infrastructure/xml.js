@@ -3,7 +3,7 @@ const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/
 (function (Tojiru) {
   const escapeXml = (value) =>
     String(value)
-      .replace(INVALID_XML_CHARS, '')
+      .replace(INVALID_XML_CHARS, "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")

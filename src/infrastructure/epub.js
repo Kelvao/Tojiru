@@ -61,7 +61,11 @@ svg {
     const landmarks = [{ type: "cover", href: pages[coverIndex].href, label: output.labels.cover }];
     const firstChapterIndex = output.entries.findIndex((entry) => entry.kind === D.Kind.CHAPTER);
     if (firstChapterIndex >= 0) {
-      landmarks.push({ type: "bodymatter", href: navEntries[firstChapterIndex].href, label: output.labels.startOfStory });
+      landmarks.push({
+        type: "bodymatter",
+        href: navEntries[firstChapterIndex].href,
+        label: output.labels.startOfStory,
+      });
     }
     return landmarks;
   }
@@ -120,10 +124,12 @@ ${landmarkItems}
 
   function buildNcx(entries, identifier, title) {
     const navPoints = entries
-      .map((entry, index) => `    <navPoint id="nav-${index + 1}" playOrder="${index + 1}">
+      .map(
+        (entry, index) => `    <navPoint id="nav-${index + 1}" playOrder="${index + 1}">
       <navLabel><text>${escapeXml(entry.title)}</text></navLabel>
       <content src="${entry.href}"/>
-    </navPoint>`)
+    </navPoint>`,
+      )
       .join("\n");
     return `<?xml version="1.0" encoding="utf-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
@@ -146,11 +152,16 @@ ${navPoints}
   }
 
   function buildCreatorTags({ writer, penciller }) {
-    const creators = [["writer", writer, "aut"], ["artist", penciller, "art"]].filter(([, name]) => name);
+    const creators = [
+      ["writer", writer, "aut"],
+      ["artist", penciller, "art"],
+    ].filter(([, name]) => name);
     return creators
-      .map(([id, name, role]) => `    <dc:creator id="creator-${id}">${escapeXml(name)}</dc:creator>
+      .map(
+        ([id, name, role]) => `    <dc:creator id="creator-${id}">${escapeXml(name)}</dc:creator>
     <meta refines="#creator-${id}" property="role" scheme="marc:relators">${role}</meta>
-`)
+`,
+      )
       .join("");
   }
 
@@ -231,16 +242,20 @@ ${spineItems}  </spine>
       const identifier = `urn:uuid:${generateUuid()}`;
 
       const zip = new (getJsZip())();
-      const put = (path, content, options = EPUB_FILE_OPTIONS) => zip.file(`${EPUB_CONTENT_DIR}/${path}`, content, options);
+      const put = (path, content, options = EPUB_FILE_OPTIONS) =>
+        zip.file(`${EPUB_CONTENT_DIR}/${path}`, content, options);
       zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS);
       zip.file("META-INF/container.xml", EPUB_CONTAINER_XML, EPUB_FILE_OPTIONS);
       put("content.opf", buildPackageOpf({ metadata, language, identifier, title, pages, coverIndex }));
-      put("nav.xhtml", buildNavXhtml({
-        entries: navEntries,
-        landmarks: createLandmarks(output, navEntries, pages, coverIndex),
-        contentsLabel: output.labels.contents,
-        language,
-      }));
+      put(
+        "nav.xhtml",
+        buildNavXhtml({
+          entries: navEntries,
+          landmarks: createLandmarks(output, navEntries, pages, coverIndex),
+          contentsLabel: output.labels.contents,
+          language,
+        }),
+      );
       put("toc.ncx", buildNcx(navEntries, identifier, title));
       put("style.css", EPUB_STYLESHEET);
       pages.forEach((page) => {
@@ -250,10 +265,11 @@ ${spineItems}  </spine>
 
       const blob = await zip.generateAsync(
         { type: "blob", mimeType: EPUB_MEDIA_TYPE, compression: "DEFLATE" },
-        (meta) => onProgress({
-          stage: "packing",
-          percent: EPUB_READING_SHARE + (meta.percent * (100 - EPUB_READING_SHARE)) / 100,
-        }),
+        (meta) =>
+          onProgress({
+            stage: "packing",
+            percent: EPUB_READING_SHARE + (meta.percent * (100 - EPUB_READING_SHARE)) / 100,
+          }),
       );
       return { blob, pageCount: pages.length };
     }

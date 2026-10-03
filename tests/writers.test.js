@@ -3,20 +3,54 @@ const assert = require("node:assert");
 const JSZip = require("jszip");
 const { loadScripts } = require("./load");
 
-const Tojiru = loadScripts(["src/domain/library.js", "src/application/usecases.js", "src/infrastructure/xml.js", "src/infrastructure/cbz.js", "src/infrastructure/epub.js"]);
+const Tojiru = loadScripts([
+  "src/domain/library.js",
+  "src/application/usecases.js",
+  "src/infrastructure/xml.js",
+  "src/infrastructure/cbz.js",
+  "src/infrastructure/epub.js",
+]);
 const D = Tojiru.domain;
 const getJsZip = () => JSZip;
 
 const page = (path) => ({ name: path.split("/").pop(), path, source: Buffer.from(path) });
-const translator = { language: "pt-BR", t: (key, params) => ({ "kind.cover.name": "Capa", "kind.toc.name": "Índice", "kind.chapter.name": "Capítulo", "kind.extra.name": "Extra", "kind.back.name": "Contracapa", "kind.toc.label": "Índice", "kind.cover.label": "Capa", "epub.start": "Início da leitura" }[key] ?? key) };
+const translator = {
+  language: "pt-BR",
+  t: (key) =>
+    ({
+      "kind.cover.name": "Capa",
+      "kind.toc.name": "Índice",
+      "kind.chapter.name": "Capítulo",
+      "kind.extra.name": "Extra",
+      "kind.back.name": "Contracapa",
+      "kind.toc.label": "Índice",
+      "kind.cover.label": "Capa",
+      "epub.start": "Início da leitura",
+    })[key] ?? key,
+};
 
 function buildOutput(items, rawMetadata = {}) {
-  const metadata = D.normalizeMetadata({ series: "Meu Mangá & Cia", writer: "Autor", genres: "Ação, Aventura", year: "2020", volume: "3", language: "pt", ...rawMetadata });
+  const metadata = D.normalizeMetadata({
+    series: "Meu Mangá & Cia",
+    writer: "Autor",
+    genres: "Ação, Aventura",
+    year: "2020",
+    volume: "3",
+    language: "pt",
+    ...rawMetadata,
+  });
   return Tojiru.usecases.buildOutputDocument({ items, metadata, translator });
 }
 
 const sampleItems = () =>
-  D.buildItems([page("M/capa.jpg"), page("M/indice.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 2/1.jpg"), page("M/extra.jpg")]);
+  D.buildItems([
+    page("M/capa.jpg"),
+    page("M/indice.jpg"),
+    page("M/Cap 1/1.jpg"),
+    page("M/Cap 1/2.jpg"),
+    page("M/Cap 2/1.jpg"),
+    page("M/extra.jpg"),
+  ]);
 
 async function open(blob) {
   return JSZip.loadAsync(await blob.arrayBuffer());
@@ -50,7 +84,15 @@ test("CBZ writer stores renamed pages in order and adds ComicInfo.xml", async ()
   const { blob, pageCount } = await format.write(buildOutput(sampleItems()), (event) => events.push(event));
   const zip = await open(blob);
   assert.equal(pageCount, 6);
-  assert.deepEqual(Object.keys(zip.files), ["0000.jpg", "0001.jpg", "0002.jpg", "0003.jpg", "0004.jpg", "0005.jpg", "ComicInfo.xml"]);
+  assert.deepEqual(Object.keys(zip.files), [
+    "0000.jpg",
+    "0001.jpg",
+    "0002.jpg",
+    "0003.jpg",
+    "0004.jpg",
+    "0005.jpg",
+    "ComicInfo.xml",
+  ]);
   assert.equal(await zip.file("0002.jpg").async("string"), "M/Cap 1/1.jpg");
   assert.ok(events.every((event) => event.stage === "packing"));
   assert.equal(format.sidecar.fileName, "ComicInfo.xml");
@@ -60,13 +102,23 @@ function fakeDecoder(sizes = {}) {
   return {
     prepare: async (pageToRead) => {
       const [width, height] = sizes[pageToRead.name] ?? [900, 1300];
-      return { data: pageToRead.source, extension: D.extensionOf(pageToRead.name), mediaType: "image/jpeg", width, height };
+      return {
+        data: pageToRead.source,
+        extension: D.extensionOf(pageToRead.name),
+        mediaType: "image/jpeg",
+        width,
+        height,
+      };
     },
   };
 }
 
 test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG images", async () => {
-  const format = Tojiru.infra.epub.createEpubFormat({ getJsZip, imageDecoder: fakeDecoder({ "2.jpg": [1800, 1200] }), generateUuid: () => "fixed-uuid" });
+  const format = Tojiru.infra.epub.createEpubFormat({
+    getJsZip,
+    imageDecoder: fakeDecoder({ "2.jpg": [1800, 1200] }),
+    generateUuid: () => "fixed-uuid",
+  });
   const events = [];
   const { blob, pageCount } = await format.write(buildOutput(sampleItems()), (event) => events.push(event));
   const zip = await open(blob);
@@ -92,13 +144,19 @@ test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG
   assert.equal((opf.match(/<itemref /g) || []).length, 6);
 
   const nav = await zip.file("OEBPS/nav.xhtml").async("string");
-  assert.deepEqual([...nav.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a>/g)].map((match) => match[2]), ["Capa", "Índice", "Capítulo 1", "Capítulo 2", "Extra"]);
+  assert.deepEqual(
+    [...nav.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a>/g)].map((match) => match[2]),
+    ["Capa", "Índice", "Capítulo 1", "Capítulo 2", "Extra"],
+  );
   assert.match(nav, /href="text\/page-0003\.xhtml">Capítulo 1/);
   assert.match(nav, /epub:type="bodymatter" href="text\/page-0003\.xhtml">Início da leitura/);
 
   const widePage = await zip.file("OEBPS/text/page-0004.xhtml").async("string");
   assert.match(widePage, /name="viewport" content="width=1800, height=1200"/);
-  assert.match(widePage, /<svg[^>]*width="100%" height="100%" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/);
+  assert.match(
+    widePage,
+    /<svg[^>]*width="100%" height="100%" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/,
+  );
   assert.match(widePage, /<image width="1800" height="1200" xlink:href="\.\.\/images\/0004\.jpg"\/>/);
 
   const stylesheet = await zip.file("OEBPS/style.css").async("string");
@@ -109,7 +167,10 @@ test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG
   assert.equal(stages.at(-1), "packing");
   assert.equal(events.at(-1).percent, 100);
   const percents = events.map((event) => event.percent);
-  assert.deepEqual(percents, [...percents].sort((a, b) => a - b));
+  assert.deepEqual(
+    percents,
+    [...percents].sort((a, b) => a - b),
+  );
 });
 
 test("EPUB writer uses left-to-right direction when the manga is not right to left", async () => {
@@ -120,7 +181,14 @@ test("EPUB writer uses left-to-right direction when the manga is not right to le
 });
 
 test("EPUB writer propagates image read errors from the decoder", async () => {
-  const decoder = { prepare: async (pageToRead) => { throw new D.ImageReadError(pageToRead.name); } };
+  const decoder = {
+    prepare: async (pageToRead) => {
+      throw new D.ImageReadError(pageToRead.name);
+    },
+  };
   const format = Tojiru.infra.epub.createEpubFormat({ getJsZip, imageDecoder: decoder, generateUuid: () => "u" });
-  await assert.rejects(() => format.write(buildOutput(sampleItems()), () => {}), (error) => error.name === "ImageReadError" && error.pageName === "capa.jpg");
+  await assert.rejects(
+    () => format.write(buildOutput(sampleItems()), () => {}),
+    (error) => error.name === "ImageReadError" && error.pageName === "capa.jpg",
+  );
 });

@@ -54,12 +54,14 @@ Não há etapa de build. Abra `index.html` diretamente ou inicie um servidor est
 python3 -m http.server 8000
 ```
 
-Os testes usam `node:test` e JSZip:
+Os testes usam `node:test` e JSZip. ESLint e Prettier verificam o código:
 
 ```sh
 npm install
-npm test
+npm run check
 ```
+
+Use `npm run format` para formatar os arquivos JavaScript. O workflow do GitHub Actions executa testes, lint e verificação de formatação em cada pull request.
 
 O JSZip e a fonte Inter estão incluídos no projeto e são carregados localmente, sem dependência de CDN. Caracteres fora da cobertura do Inter, como japonês, usam as fontes disponíveis no sistema.
 

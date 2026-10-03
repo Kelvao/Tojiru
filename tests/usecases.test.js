@@ -16,7 +16,11 @@ function setup() {
   const formats = {
     cbz: {
       extension: "cbz",
-      sidecar: { fileName: "ComicInfo.xml", mediaType: "application/xml", build: (output) => `xml:${output.entries.length}` },
+      sidecar: {
+        fileName: "ComicInfo.xml",
+        mediaType: "application/xml",
+        build: (output) => `xml:${output.entries.length}`,
+      },
       write: async (output, onProgress) => {
         written.push(output);
         onProgress({ stage: "packing", percent: 100 });
@@ -59,7 +63,10 @@ test("numberChapters uses the translated chapter name and skips extras", () => {
   const { store, useCases } = setup();
   useCases.loadFolder(sampleFolder);
   useCases.numberChapters();
-  assert.deepEqual([...store.get().items.map((item) => item.title)], ["", "kind.chapter.name 1", "kind.chapter.name 2"]);
+  assert.deepEqual(
+    [...store.get().items.map((item) => item.title)],
+    ["", "kind.chapter.name 1", "kind.chapter.name 2"],
+  );
 });
 
 test("manual items can be created and undone", () => {
@@ -70,7 +77,10 @@ test("manual items can be created and undone", () => {
   const manual = store.get().items.find((item) => item.manual);
   assert.equal(manual.title, "Sumário");
   useCases.undoManualItem(store.get().items.indexOf(manual));
-  assert.equal(store.get().items.some((item) => item.manual), false);
+  assert.equal(
+    store.get().items.some((item) => item.manual),
+    false,
+  );
   assert.equal(D.countPages(store.get().items), 4);
 });
 
@@ -92,7 +102,10 @@ test("generate hands a self-contained output document to the selected format and
     onProgress: (event) => progress.push(event),
   });
   const output = written[0];
-  assert.deepEqual([...output.entries.map((entry) => entry.title)], ["kind.cover.name", "Início", "kind.chapter.name 2"]);
+  assert.deepEqual(
+    [...output.entries.map((entry) => entry.title)],
+    ["kind.cover.name", "Início", "kind.chapter.name 2"],
+  );
   assert.deepEqual([...output.entries.map((entry) => entry.startPage)], [0, 1, 3]);
   assert.equal(output.pages.length, 4);
   assert.equal(output.language, "pt");
@@ -134,6 +147,9 @@ test("generate refuses to run without the required fields and touches neither wr
 test("exportSidecar also requires the title", () => {
   const { useCases, saved } = setup();
   useCases.loadFolder(sampleFolder);
-  assert.throws(() => useCases.exportSidecar({ series: "" }), (error) => error instanceof D.MetadataError);
+  assert.throws(
+    () => useCases.exportSidecar({ series: "" }),
+    (error) => error instanceof D.MetadataError,
+  );
   assert.equal(saved.length, 0);
 });

@@ -9,7 +9,8 @@
   const TRANSLATIONS = {
     en: {
       "app.title": "Tojiru 綴じる",
-      "hero.description": "Packs a manga folder into a single CBZ or EPUB file. Each subfolder becomes a chapter: you name each one and Tojiru builds the index in ComicInfo.xml, along with title, author and genres, in the standard read by comic readers.",
+      "hero.description":
+        "Packs a manga folder into a single CBZ or EPUB file. Each subfolder becomes a chapter: you name each one and Tojiru builds the index in ComicInfo.xml, along with title, author and genres, in the standard read by comic readers.",
       "hero.privacy": "Everything runs in your browser. Your images never leave your computer.",
       "section.folder": "Manga folder",
       "section.details": "Details",
@@ -99,7 +100,8 @@
     },
     "pt-BR": {
       "app.title": "Tojiru 綴じる",
-      "hero.description": "Empacota uma pasta de mangá em um único arquivo CBZ ou EPUB. Cada subpasta vira um capítulo: você dá o nome de cada um e o Tojiru monta o índice no ComicInfo.xml, junto com título, autor e gêneros, no padrão lido por leitores de quadrinhos.",
+      "hero.description":
+        "Empacota uma pasta de mangá em um único arquivo CBZ ou EPUB. Cada subpasta vira um capítulo: você dá o nome de cada um e o Tojiru monta o índice no ComicInfo.xml, junto com título, autor e gêneros, no padrão lido por leitores de quadrinhos.",
       "hero.privacy": "Tudo roda no navegador. Suas imagens não saem do computador.",
       "section.folder": "Pasta do mangá",
       "section.details": "Informações",
@@ -207,9 +209,8 @@
   }
 
   function resolveTemplate(entry, language, params) {
-    const template = typeof entry === "string"
-      ? entry
-      : entry[new Intl.PluralRules(language).select(params.n)] ?? entry.other;
+    const template =
+      typeof entry === "string" ? entry : (entry[new Intl.PluralRules(language).select(params.n)] ?? entry.other);
     return template.replace(/\{(\w+)\}/g, (placeholder, name) => params[name] ?? placeholder);
   }
 

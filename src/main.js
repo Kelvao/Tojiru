@@ -1,7 +1,8 @@
 (function (Tojiru) {
   const { createStore, createUseCases } = Tojiru.usecases;
   const { DEFAULT_LANGUAGE, LANGUAGES, TRANSLATIONS, detectLanguage, createTranslator } = Tojiru.i18n;
-  const { pagesFromFileList, createBlobSaver, createLanguageStore, createPreviewUrls, generateUuid } = Tojiru.infra.browser;
+  const { pagesFromFileList, createBlobSaver, createLanguageStore, createPreviewUrls, generateUuid } =
+    Tojiru.infra.browser;
   const { createImageDecoder } = Tojiru.infra.images;
   const { createCbzFormat } = Tojiru.infra.cbz;
   const { createEpubFormat } = Tojiru.infra.epub;

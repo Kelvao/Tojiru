@@ -177,6 +177,7 @@ ${position}`;
     const subjects = metadata.genreList.map((genre) => dcTag("subject", genre)).join("");
     const year = /^\d{4}$/.test(metadata.year) ? metadata.year : "";
     const modified = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    const { width, height } = pages[0];
     const pageItems = pages
       .map((page) => `    <item id="${page.id}" href="${page.href}" media-type="application/xhtml+xml"/>\n`)
       .join("");
@@ -195,6 +196,9 @@ ${dcTag("title", title)}${dcTag("language", language)}${buildCreatorTags(metadat
     <meta property="rendition:layout">pre-paginated</meta>
     <meta property="rendition:orientation">auto</meta>
     <meta property="rendition:spread">none</meta>
+    <meta name="zero-gutter" content="true"/>
+    <meta name="zero-margin" content="true"/>
+    <meta name="original-resolution" content="${width}x${height}"/>
     <meta name="cover" content="${pages[coverIndex].imageId}"/>
     <meta name="fixed-layout" content="true"/>
     <meta name="book-type" content="comic"/>

@@ -81,6 +81,9 @@ test("EPUB writer builds a valid fixed-layout package with centred SVG pages", a
   assert.match(opf, /<dc:title>Meu Mangá &amp; Cia<\/dc:title>/);
   assert.match(opf, /page-progression-direction="rtl"/);
   assert.match(opf, /rendition:layout">pre-paginated/);
+  assert.match(opf, /<meta name="zero-gutter" content="true"\/>/);
+  assert.match(opf, /<meta name="zero-margin" content="true"\/>/);
+  assert.match(opf, /<meta name="original-resolution" content="900x1300"\/>/);
   assert.match(opf, /id="img-0001"[^>]*properties="cover-image"/);
   assert.match(opf, /group-position">3</);
   assert.equal((opf.match(/<itemref /g) || []).length, 6);

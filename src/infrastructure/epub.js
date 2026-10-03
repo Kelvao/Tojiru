@@ -196,6 +196,8 @@ ${dcTag("title", title)}${dcTag("language", language)}${buildCreatorTags(metadat
     <meta property="rendition:orientation">auto</meta>
     <meta property="rendition:spread">none</meta>
     <meta name="cover" content="${pages[coverIndex].imageId}"/>
+    <meta name="fixed-layout" content="true"/>
+    <meta name="book-type" content="comic"/>
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>

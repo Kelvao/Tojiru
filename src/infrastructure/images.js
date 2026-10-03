@@ -51,19 +51,23 @@
     }
 
     async function prepare(page) {
+      let decoded;
       try {
-        const decoded = await decode(page.source);
-        const size = sizeOf(decoded);
-        const extension = D.extensionOf(page.name);
-        const isNative = Object.hasOwn(NATIVE_MEDIA_TYPES, extension);
-        const data = isNative ? page.source : await toPngBlob(decoded, size);
-        decoded.close?.();
-        return {
-          data,
-          extension: isNative ? extension : CONVERTED_IMAGE.extension,
-          mediaType: isNative ? NATIVE_MEDIA_TYPES[extension] : CONVERTED_IMAGE.mediaType,
-          ...size,
-        };
+        try {
+          decoded = await decode(page.source);
+          const size = sizeOf(decoded);
+          const extension = D.extensionOf(page.name);
+          const isNative = Object.hasOwn(NATIVE_MEDIA_TYPES, extension);
+          const data = isNative ? page.source : await toPngBlob(decoded, size);
+          return {
+            data,
+            extension: isNative ? extension : CONVERTED_IMAGE.extension,
+            mediaType: isNative ? NATIVE_MEDIA_TYPES[extension] : CONVERTED_IMAGE.mediaType,
+            ...size,
+          };
+        } finally {
+          decoded?.close?.();
+        }
       } catch {
         throw new D.ImageReadError(page.name);
       }

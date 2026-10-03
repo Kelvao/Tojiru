@@ -63,6 +63,10 @@ npm test
 
 É necessária conexão à internet para carregar o JSZip. A fonte externa é opcional e tem fallback para a fonte do sistema.
 
+## Licença
+
+O código original deste projeto está sob a [PolyForm Noncommercial License 1.0.0](LICENSE). São permitidos uso, alteração e redistribuição para fins não comerciais, desde que os termos da licença e o aviso obrigatório de atribuição sejam mantidos. Componentes de terceiros continuam sujeitos às próprias licenças.
+
 ## Privacidade
 
 As imagens são processadas localmente no navegador. O idioma escolhido é salvo no armazenamento local; a página carrega JSZip e, opcionalmente, a fonte a partir de serviços externos.

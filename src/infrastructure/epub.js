@@ -81,7 +81,6 @@
     const title = escapeXml(page.title);
     const lang = escapeXml(language);
     return `<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="${lang}" xml:lang="${lang}">
 <head>
   <meta charset="utf-8"/>
@@ -236,7 +235,7 @@ ${spineItems}  </spine>
 
       const zip = new (getJsZip())();
       const put = (path, content, options = EPUB_FILE_OPTIONS) => zip.file(`${EPUB_CONTENT_DIR}/${path}`, content, options);
-      zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS);
+      zip.file("mimetype", EPUB_MEDIA_TYPE, EPUB_STORED_OPTIONS, date: new Date(0));
       zip.file("META-INF/container.xml", EPUB_CONTAINER_XML, EPUB_FILE_OPTIONS);
       put("content.opf", buildPackageOpf({ metadata, language, identifier, title, pages, coverIndex }));
       put("nav.xhtml", buildNavXhtml({

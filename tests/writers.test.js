@@ -76,6 +76,9 @@ test("EPUB writer builds a valid fixed-layout package with centred SVG pages", a
   assert.equal(names.filter((name) => name.endsWith("/")).length, 0);
   assert.equal(pageCount, 6);
 
+  const container = await zip.file("META-INF/container.xml").async("string");
+  assert.match(container, /media-type="application\/oebps-package\+xml"/);
+
   const opf = await zip.file("OEBPS/content.opf").async("string");
   assert.match(opf, /<dc:identifier id="book-id">urn:uuid:fixed-uuid<\/dc:identifier>/);
   assert.match(opf, /<dc:title>Meu Mangá &amp; Cia<\/dc:title>/);

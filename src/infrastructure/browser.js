@@ -58,8 +58,8 @@
     async function createSink({ fileName, requiredBytes }) {
       const root = await rootOrNull();
       if (!root) throw new Error("OPFS unavailable");
-      await assertSpaceFor(requiredBytes);
       await purge();
+      await assertSpaceFor(requiredBytes);
       const directory = await root.getDirectoryHandle(OPFS_DIRECTORY, { create: true });
       const handle = await directory.getFileHandle(fileName, { create: true });
       if (typeof handle.createWritable !== "function") throw new Error("OPFS writable streams unavailable");

@@ -69,6 +69,19 @@ test("OPFS sink purges leftovers from earlier runs before creating a new file", 
   assert.deepEqual([...state.directories.get("tojiru-tmp").files.keys()], ["b.cbz"]);
 });
 
+test("OPFS quota check ignores the previous temporary archive", async () => {
+  const { state, navigatorRef } = fakeOpfs({ quota: 1000 });
+  navigatorRef.storage.estimate = async () => ({
+    quota: 1000,
+    usage: state.directories.has("tojiru-tmp") ? 900 : 0,
+  });
+  const storage = createOpfsStorage({ navigatorRef });
+
+  await storage.createSink({ fileName: "a.cbz", requiredBytes: 200 });
+  await assert.doesNotReject(storage.createSink({ fileName: "b.cbz", requiredBytes: 200 }));
+  assert.equal(state.removed.length, 1);
+});
+
 test("OPFS sink refuses when the storage quota cannot hold the archive", async () => {
   const { navigatorRef } = fakeOpfs({ quota: 1000, usage: 900 });
   const storage = createOpfsStorage({ navigatorRef });

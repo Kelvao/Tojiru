@@ -1,7 +1,7 @@
 (function (Tojiru) {
   const D = Tojiru.domain;
   const BYTES_PER_MB = 1024 * 1024;
-  const { LANGUAGES, nextLanguage } = Tojiru.i18n;
+  const { LANGUAGES, DEFAULT_LANGUAGE, nextLanguage } = Tojiru.i18n;
 
   function createController({ store, useCases, formats, view, translator, languageStore, readPages, previews }) {
     const { elements } = view;
@@ -58,6 +58,7 @@
     }
 
     function refreshLanguage() {
+      document.documentElement.lang = translator.language || DEFAULT_LANGUAGE;
       view.applyStaticTranslations();
       view.renderLanguageCode(LANGUAGES);
       if (!mangaLanguageTouched) view.setMangaLanguage(mangaLanguageCode());

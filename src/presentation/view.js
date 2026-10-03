@@ -227,6 +227,8 @@
       elements.generateButton.disabled = !enabled;
       elements.sidecarButton.disabled = !enabled;
       elements.addButton.disabled = !enabled;
+      elements.numberButton.disabled = !enabled;
+      elements.clearButton.disabled = !enabled;
     };
 
     const setGenerating = (busy) => {

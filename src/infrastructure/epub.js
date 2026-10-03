@@ -77,7 +77,7 @@ svg {
   <meta name="viewport" content="width=${page.width}, height=${page.height}"/>
   <link rel="stylesheet" type="text/css" href="../style.css"/>
 </head>
-<body class="page-body">
+<body>
     <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="100%" height="100%" viewBox="0 0 ${page.width} ${page.height}" preserveAspectRatio="xMidYMid meet">
     <title>${title}</title>
     <image width="${page.width}" height="${page.height}" xlink:href="../${page.imagePath}"/>

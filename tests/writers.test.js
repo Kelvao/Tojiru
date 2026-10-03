@@ -65,7 +65,7 @@ function fakeDecoder(sizes = {}) {
   };
 }
 
-test("EPUB writer builds a valid fixed-layout package with centred SVG pages", async () => {
+test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG images", async () => {
   const format = Tojiru.infra.epub.createEpubFormat({ getJsZip, imageDecoder: fakeDecoder({ "2.jpg": [1800, 1200] }), generateUuid: () => "fixed-uuid" });
   const events = [];
   const { blob, pageCount } = await format.write(buildOutput(sampleItems()), (event) => events.push(event));
@@ -96,9 +96,13 @@ test("EPUB writer builds a valid fixed-layout package with centred SVG pages", a
   assert.match(nav, /href="text\/page-0003\.xhtml">Capítulo 1/);
   assert.match(nav, /epub:type="bodymatter" href="text\/page-0003\.xhtml">Início da leitura/);
 
-  const wide = await zip.file("OEBPS/text/page-0004.xhtml").async("string");
-  assert.match(wide, /viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet"/);
-  assert.match(wide, /name="viewport" content="width=1800, height=1200"/);
+  const widePage = await zip.file("OEBPS/text/page-0004.xhtml").async("string");
+  assert.match(widePage, /name="viewport" content="width=1800, height=1200"/);
+  assert.match(widePage, /<svg[^>]*width="100%" height="100%" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/);
+  assert.match(widePage, /<image width="1800" height="1200" xlink:href="\.\.\/images\/0004\.jpg"\/>/);
+
+  const stylesheet = await zip.file("OEBPS/style.css").async("string");
+  assert.match(stylesheet, /svg\s*\{\s*display:\s*block;\s*width:\s*100%;\s*height:\s*100%;\s*\}/);
 
   const stages = events.map((event) => event.stage);
   assert.equal(stages[0], "reading");

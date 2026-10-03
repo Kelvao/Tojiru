@@ -24,21 +24,10 @@
   overflow: hidden;
 }
 
-.page-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+svg {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-.page-img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  display: block;
 }
 `;
 
@@ -89,7 +78,10 @@
   <link rel="stylesheet" type="text/css" href="../style.css"/>
 </head>
 <body class="page-body">
-    <img class="page-img" src="../${page.imagePath}" alt="${title}"/>
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="100%" height="100%" viewBox="0 0 ${page.width} ${page.height}" preserveAspectRatio="xMidYMid meet">
+    <title>${title}</title>
+    <image width="${page.width}" height="${page.height}" xlink:href="../${page.imagePath}"/>
+  </svg>
 </body>
 </html>
 `;

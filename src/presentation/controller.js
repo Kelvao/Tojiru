@@ -58,7 +58,6 @@
     }
 
     function refreshLanguage() {
-      document.documentElement.lang = translator.language || DEFAULT_LANGUAGE;
       view.applyStaticTranslations();
       view.renderLanguageCode(LANGUAGES);
       if (!mangaLanguageTouched) view.setMangaLanguage(mangaLanguageCode());

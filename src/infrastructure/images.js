@@ -1,5 +1,6 @@
 (function (Tojiru) {
   const D = Tojiru.domain;
+  const { readImageSize } = Tojiru.infra.imagesize;
   const CONVERTED_IMAGE = { extension: "png", mediaType: "image/png" };
   const NATIVE_MEDIA_TYPES = {
     jpg: "image/jpeg",
@@ -50,24 +51,40 @@
       );
     }
 
-    async function prepare(page) {
-      let decoded;
+    const rangeReaderOf = (file) => async (offset, length) =>
+      new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
+
+    async function measure(file) {
+      const headerSize = await readImageSize(rangeReaderOf(file));
+      if (headerSize) return headerSize;
+      const decoded = await decode(file);
       try {
-        try {
-          decoded = await decode(page.source);
-          const size = sizeOf(decoded);
-          const extension = D.extensionOf(page.name);
-          const isNative = Object.hasOwn(NATIVE_MEDIA_TYPES, extension);
-          const data = isNative ? page.source : await toPngBlob(decoded, size);
-          return {
-            data,
-            extension: isNative ? extension : CONVERTED_IMAGE.extension,
-            mediaType: isNative ? NATIVE_MEDIA_TYPES[extension] : CONVERTED_IMAGE.mediaType,
-            ...size,
-          };
-        } finally {
-          decoded?.close?.();
-        }
+        return sizeOf(decoded);
+      } finally {
+        decoded?.close?.();
+      }
+    }
+
+    async function convertToPng(file) {
+      const decoded = await decode(file);
+      try {
+        const size = sizeOf(decoded);
+        return { data: await toPngBlob(decoded, size), ...CONVERTED_IMAGE, ...size };
+      } finally {
+        decoded?.close?.();
+      }
+    }
+
+    async function prepare(page) {
+      const extension = D.extensionOf(page.name);
+      try {
+        if (!Object.hasOwn(NATIVE_MEDIA_TYPES, extension)) return await convertToPng(page.source);
+        return {
+          data: page.source,
+          extension,
+          mediaType: NATIVE_MEDIA_TYPES[extension],
+          ...(await measure(page.source)),
+        };
       } catch {
         throw new D.ImageReadError(page.name);
       }

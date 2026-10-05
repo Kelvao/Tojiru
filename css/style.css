@@ -777,6 +777,9 @@ button.flat:hover {
     grid-column: 2;
     align-self: end;
   }
+  .col-index {
+    padding-top: 16px;
+  }
   .hero {
     text-align: left;
     padding: 28px 4px 24px;

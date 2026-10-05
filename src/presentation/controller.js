@@ -118,6 +118,7 @@
 
     function bindEvents() {
       elements.folderInput.addEventListener("change", onFolderSelected);
+      elements.extractButton.addEventListener("click", () => useCases.extractFolderNames());
       elements.numberButton.addEventListener("click", () => useCases.numberChapters());
       elements.clearButton.addEventListener("click", () => useCases.clearTitles());
       elements.sidecarButton.addEventListener("click", onExportSidecar);

@@ -4,7 +4,6 @@
 [![Status](https://img.shields.io/uptimerobot/status/m803438082-8cc629151c0346a7bf46cecb?label=Status)](https://stats.uptimerobot.com/AhVkgcXoGz)
 [![Uptime](https://img.shields.io/uptimerobot/ratio/m803438082-8cc629151c0346a7bf46cecb?label=Uptime)](https://stats.uptimerobot.com/AhVkgcXoGz)
 
-
 Organize imagens de mangá e gere um **CBZ** ou **EPUB** com índice e metadados. Tudo é processado no navegador; as imagens não são enviadas a um servidor.
 
 ## Recursos
@@ -29,29 +28,30 @@ O título é obrigatório e também define o nome do arquivo. Os outros metadado
 - Cada subpasta direta da raiz vira um item; pastas mais profundas ficam agrupadas nele.
 - Imagens soltas na raiz formam o item `(raiz)`, exceto arquivos reconhecidos como capa, índice, extra ou contracapa.
 - As páginas são ordenadas por nome em ordem natural (`2.jpg` antes de `10.jpg`).
+- Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e capa, índice, extras e contracapa com o nome do tipo. **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta, e **Gerar numeração** volta ao padrão numerado. Os dois sobrescrevem os títulos dos capítulos, mas não mexem em capa, índice, extras, contracapa nem em itens criados manualmente. **Limpar nomes** esvazia todos os títulos.
 - A detecção reconhece nomes em português e inglês, sem diferenciar maiúsculas ou acentos. Você pode alterar o tipo manualmente.
 - Extensões aceitas: `jpg`, `jpeg`, `png`, `webp`, `gif`, `avif` e `bmp`.
 
 ## Metadados
 
-| Campo | Observação |
-| --- | --- |
-| Título | Obrigatório; também nomeia o arquivo |
-| Autor e artista | Artista é opcional e pode ser diferente do autor |
-| Gêneros | Separe por vírgulas |
-| Editora, ano e sinopse | Opcionais |
-| Idioma | Código como `pt`, `en` ou `ja` |
-| Volume | Número usado para ordenar a série |
-| Direção de leitura | Padrão: direita para a esquerda |
+| Campo                  | Observação                                       |
+| ---------------------- | ------------------------------------------------ |
+| Título                 | Obrigatório; também nomeia o arquivo             |
+| Autor e artista        | Artista é opcional e pode ser diferente do autor |
+| Gêneros                | Separe por vírgulas                              |
+| Editora, ano e sinopse | Opcionais                                        |
+| Idioma                 | Código como `pt`, `en` ou `ja`                   |
+| Volume                 | Número usado para ordenar a série                |
+| Direção de leitura     | Padrão: direita para a esquerda                  |
 
 Campos vazios são omitidos dos metadados gerados.
 
 ## Formatos
 
-| Formato | Conteúdo |
-| --- | --- |
-| CBZ | Imagens na ordem do índice e `ComicInfo.xml`; imagens armazenadas sem recompressão |
-| EPUB | EPUB 3 de layout fixo, com uma página XHTML/SVG por imagem, índice navegável, capa e metadados |
+| Formato | Conteúdo                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| CBZ     | Imagens na ordem do índice e `ComicInfo.xml`; imagens armazenadas sem recompressão             |
+| EPUB    | EPUB 3 de layout fixo, com uma página XHTML/SVG por imagem, índice navegável, capa e metadados |
 
 No modo CBZ também é possível baixar apenas o `ComicInfo.xml`. Ele contém uma entrada por item do índice; `Image` aponta para a primeira imagem do item.
 
@@ -59,10 +59,10 @@ No EPUB, o SVG usa escala proporcional (`xMidYMid meet`) para evitar distorção
 
 ## Imagens
 
-| Formato | Tratamento |
-| --- | --- |
+| Formato               | Tratamento                                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
 | JPEG, PNG, GIF e WebP | Incluídos sem conversão. No EPUB, largura e altura são lidas do cabeçalho do arquivo, sem decodificar a imagem |
-| AVIF e BMP | Decodificados no navegador e convertidos para PNG no EPUB |
+| AVIF e BMP            | Decodificados no navegador e convertidos para PNG no EPUB                                                      |
 
 Detalhes e limites:
 
@@ -90,12 +90,12 @@ O Tojiru não lê nem edita um `ComicInfo.xml` existente.
 
 O código é dividido em camadas, e o teste `tests/architecture.test.js` impede dependências na direção errada.
 
-| Camada | Pasta | Responsabilidade |
-| --- | --- | --- |
-| Domínio | `src/domain` | Regras puras: itens, ordenação, detecção de tipos, metadados |
-| Aplicação | `src/application` | Casos de uso (carregar pasta, gerar arquivo) com portas injetadas |
+| Camada         | Pasta                | Responsabilidade                                                              |
+| -------------- | -------------------- | ----------------------------------------------------------------------------- |
+| Domínio        | `src/domain`         | Regras puras: itens, ordenação, detecção de tipos, metadados                  |
+| Aplicação      | `src/application`    | Casos de uso (carregar pasta, gerar arquivo) com portas injetadas             |
 | Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura de dimensões, OPFS, download |
-| Apresentação | `src/presentation` | Interface, controlador e traduções |
+| Apresentação   | `src/presentation`   | Interface, controlador e traduções                                            |
 
 `src/main.js` é a raiz de composição: liga as camadas e injeta os adaptadores do navegador. Os scripts são carregados na ordem do `index.html`, sem módulos ES, para que o projeto funcione ao abrir o arquivo direto.
 

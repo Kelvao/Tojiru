@@ -16,6 +16,7 @@
       status: byId("st2"),
       seriesInput: byId("series"),
       mangaLanguageInput: byId("lang"),
+      extractButton: byId("extract"),
       numberButton: byId("auto"),
       clearButton: byId("clear"),
       sidecarButton: byId("xml"),
@@ -230,6 +231,7 @@
       elements.addButton.disabled = !enabled;
       elements.numberButton.disabled = !enabled;
       elements.clearButton.disabled = !enabled;
+      elements.extractButton.disabled = !enabled;
     };
 
     const setGenerating = (busy) => {

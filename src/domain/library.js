@@ -152,7 +152,7 @@
 
   function renameChapters(items, makeTitle) {
     let number = 0;
-    return items.map((item) => (isChapter(item) ? { ...item, title: makeTitle(++number) } : item));
+    return items.map((item) => (isChapter(item) ? { ...item, title: makeTitle(++number, item) } : item));
   }
 
   function originOf(items, page) {

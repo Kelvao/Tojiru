@@ -65,7 +65,7 @@ test("numberChapters uses the translated chapter name and skips extras", () => {
   useCases.numberChapters();
   assert.deepEqual(
     [...store.get().items.map((item) => item.title)],
-    ["", "kind.chapter.name 1", "kind.chapter.name 2"],
+    ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
   );
 });
 
@@ -152,4 +152,61 @@ test("exportSidecar also requires the title", () => {
     (error) => error instanceof D.MetadataError,
   );
   assert.equal(saved.length, 0);
+});
+
+test("loadFolder fills chapters with the numbered pattern and detected extras with their kind name", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  assert.deepEqual(
+    store.get().items.map((item) => item.title),
+    ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
+  );
+});
+
+test("extractFolderNames fills chapters with folder names and numberChapters restores numbering", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.extractFolderNames();
+  assert.deepEqual(
+    store.get().items.map((item) => item.title),
+    ["kind.cover.name", "Cap 1", "Cap 2"],
+  );
+  useCases.numberChapters();
+  assert.deepEqual(
+    store.get().items.map((item) => item.title),
+    ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
+  );
+});
+
+test("root pages have no folder name and stay numbered when extracting", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder([page("M/1.jpg"), page("M/Cap 1/1.jpg")]);
+  useCases.extractFolderNames();
+  assert.deepEqual(
+    store.get().items.map((item) => item.title),
+    ["kind.chapter.name 1", "Cap 1"],
+  );
+});
+
+test("detected extras keep their kind name through extracting and numbering", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder([page("M/capa.jpg"), page("M/Extra/1.jpg"), page("M/Cap 1/1.jpg"), page("M/Contracapa.jpg")]);
+  const titles = () => store.get().items.map((item) => item.title);
+  const numbered = ["kind.cover.name", "kind.chapter.name 1", "kind.extra.name", "kind.back.name"];
+  assert.deepEqual(titles(), numbered);
+  useCases.extractFolderNames();
+  assert.deepEqual(titles(), ["kind.cover.name", "Cap 1", "kind.extra.name", "kind.back.name"]);
+  useCases.numberChapters();
+  assert.deepEqual(titles(), numbered);
+});
+
+test("generate uses the filled titles", async () => {
+  const { useCases, written } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.extractFolderNames();
+  await useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} });
+  assert.deepEqual(
+    written[0].entries.map((entry) => entry.title),
+    ["kind.cover.name", "Cap 1", "Cap 2"],
+  );
 });

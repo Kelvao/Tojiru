@@ -48,6 +48,15 @@
   function createUseCases({ store, formats, saver, translator }) {
     const changeItems = (change, options) => store.update((state) => ({ items: change(state.items) }), options);
 
+    function titleChapters(items, useFolderNames) {
+      const chapterName = translator.t("kind.chapter.name");
+      const fromFolder = (item) => useFolderNames && !item.manual && item.folder !== D.LOOSE_FOLDER;
+      return D.renameChapters(items, (number, item) => (fromFolder(item) ? item.folder : `${chapterName} ${number}`));
+    }
+
+    const titleExtras = (items) =>
+      items.map((item) => (D.isChapter(item) ? item : { ...item, title: translator.t(`kind.${item.kind}.name`) }));
+
     function outputFor(rawMetadata) {
       const metadata = D.normalizeMetadata(rawMetadata);
       const problems = D.validateMetadata(metadata);
@@ -57,7 +66,7 @@
 
     return {
       loadFolder(pages) {
-        store.update(() => ({ items: D.buildItems(pages), folderLoaded: true }));
+        store.update(() => ({ items: titleExtras(titleChapters(D.buildItems(pages), false)), folderLoaded: true }));
       },
       moveItem(index, offset) {
         changeItems((items) => D.moveItem(items, index, offset));
@@ -68,9 +77,11 @@
       renameItem(index, title) {
         changeItems((items) => D.setItemTitle(items, index, title), { quiet: true });
       },
+      extractFolderNames() {
+        changeItems((items) => titleChapters(items, true));
+      },
       numberChapters() {
-        const chapterName = translator.t("kind.chapter.name");
-        changeItems((items) => D.renameChapters(items, (number) => `${chapterName} ${number}`));
+        changeItems((items) => titleChapters(items, false));
       },
       clearTitles() {
         changeItems(D.clearTitles);

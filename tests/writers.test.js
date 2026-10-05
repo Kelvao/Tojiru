@@ -164,7 +164,7 @@ test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG
   assert.match(widePage, /<image width="1800" height="1200" xlink:href="\.\.\/images\/0004\.jpg"\/>/);
 
   const stylesheet = await zip.file("OEBPS/style.css").async("string");
-  assert.match(stylesheet, /svg\s*\{\s*display:\s*block;\s*width:\s*100%;\s*height:\s*100%;\s*\}/);
+  assert.match(stylesheet, /svg\s*\{\s*display:\s*block;\s*width:\s*100wh;\s*height:\s*100vh;\s*\}/);
 
   const stages = events.map((event) => event.stage);
   assert.equal(stages[0], "reading");

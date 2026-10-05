@@ -313,7 +313,6 @@ button:disabled {
   align-items: center;
 }
 
-.gt button,
 .tools button {
   min-height: 30px;
   padding: 0 12px;
@@ -677,12 +676,6 @@ dialog[open] {
   .bar .row button {
     flex: 1;
   }
-  .gt .row {
-    width: 100%;
-  }
-  .gt .row button {
-    flex: 1;
-  }
   .tools,
   .tg {
     align-items: stretch;
@@ -704,7 +697,6 @@ dialog[open] {
   button {
     min-height: 44px;
   }
-  .gt button,
   .tools button {
     min-height: 40px;
   }
@@ -773,15 +765,17 @@ button.flat:hover {
     align-items: start;
   }
   .rail {
+    grid-row: 1 / span 2;
     position: sticky;
     top: 12px;
-    max-height: calc(100vh - 24px);
+    max-height: calc(100vh - 72px);
     overflow-y: auto;
     padding-right: 6px;
     margin-right: -6px;
   }
   .bar {
     grid-column: 2;
+    align-self: end;
   }
   .hero {
     text-align: left;

@@ -159,12 +159,12 @@ test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG
   assert.match(widePage, /name="viewport" content="width=1800, height=1200"/);
   assert.match(
     widePage,
-    /<svg[^>]*width="100wh" height="100vh" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/,
+    /<svg[^>]*width="100vw" height="100vh" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/,
   );
   assert.match(widePage, /<image width="1800" height="1200" xlink:href="\.\.\/images\/0004\.jpg"\/>/);
 
   const stylesheet = await zip.file("OEBPS/style.css").async("string");
-  assert.match(stylesheet, /svg\s*\{\s*display:\s*block;\s*width:\s*100wh;\s*height:\s*100vh;\s*\}/);
+  assert.match(stylesheet, /svg\s*\{\s*display:\s*block;\s*width:\s*100vw;\s*height:\s*100vh;\s*\}/);
 
   const stages = events.map((event) => event.stage);
   assert.equal(stages[0], "reading");

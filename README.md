@@ -18,17 +18,18 @@ Organize imagens de mangá e gere um **CBZ** ou **EPUB** com índice e metadados
 
 1. Abra `index.html` em um navegador com suporte à seleção de pastas (`webkitdirectory`).
 2. Selecione a pasta raiz do mangá.
-3. Revise o índice: edite nomes, tipos e ordem. Use **Novo item** para separar páginas que estejam dentro de um capítulo.
+3. Revise o índice: edite títulos, tipos e ordem (▲▼). Use **+ Novo item** para separar páginas de um capítulo em um item de capa, índice, extra ou contracapa; **Desfazer** devolve as páginas ao item de origem.
 4. Preencha o título, escolha **CBZ** ou **EPUB** e clique em **Gerar**.
 
-O título é obrigatório e também define o nome do arquivo. Os outros metadados são opcionais.
+O título é obrigatório e também define o nome do arquivo. Ao escolher a pasta, ele é preenchido com o nome da pasta raiz se estiver vazio. Os outros metadados são opcionais.
 
 ## Como a pasta é organizada
 
 - Cada subpasta direta da raiz vira um item; pastas mais profundas ficam agrupadas nele.
 - Imagens soltas na raiz formam o item `(raiz)`, exceto arquivos reconhecidos como capa, índice, extra ou contracapa.
 - As páginas são ordenadas por nome em ordem natural (`2.jpg` antes de `10.jpg`).
-- Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e capa, índice, extras e contracapa com o nome do tipo. **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta, e **Gerar numeração** volta ao padrão numerado. Os dois sobrescrevem os títulos dos capítulos, mas não mexem em capa, índice, extras, contracapa nem em itens criados manualmente. **Limpar nomes** esvazia todos os títulos.
+- Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e capa, índice, extras e contracapa com o nome do tipo.
+- **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta; páginas soltas na raiz não têm subpasta e continuam numeradas. **Gerar numeração** volta ao padrão "Capítulo N". Os dois sobrescrevem os títulos dos capítulos e não alteram capa, índice, extras, contracapa nem itens criados com **+ Novo item**. **Limpar nomes** esvazia todos os títulos; itens sem título usam o nome do tipo ou "Capítulo N" na geração.
 - A detecção reconhece nomes em português e inglês, sem diferenciar maiúsculas ou acentos. Você pode alterar o tipo manualmente.
 - Extensões aceitas: `jpg`, `jpeg`, `png`, `webp`, `gif`, `avif` e `bmp`.
 
@@ -39,8 +40,8 @@ O título é obrigatório e também define o nome do arquivo. Os outros metadado
 | Título                 | Obrigatório; também nomeia o arquivo             |
 | Autor e artista        | Artista é opcional e pode ser diferente do autor |
 | Gêneros                | Separe por vírgulas                              |
-| Editora, ano e sinopse | Opcionais                                        |
-| Idioma                 | Código como `pt`, `en` ou `ja`                   |
+| Editora, ano e sinopse | Opcionais; o ano tem 4 dígitos                   |
+| Idioma do mangá        | Código como `pt`, `en` ou `ja`                   |
 | Volume                 | Número usado para ordenar a série                |
 | Direção de leitura     | Padrão: direita para a esquerda                  |
 
@@ -94,7 +95,7 @@ O código é dividido em camadas, e o teste `tests/architecture.test.js` impede 
 | -------------- | -------------------- | ----------------------------------------------------------------------------- |
 | Domínio        | `src/domain`         | Regras puras: itens, ordenação, detecção de tipos, metadados                  |
 | Aplicação      | `src/application`    | Casos de uso (carregar pasta, gerar arquivo) com portas injetadas             |
-| Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura de dimensões, OPFS, download |
+| Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura e conversão de imagens, OPFS |
 | Apresentação   | `src/presentation`   | Interface, controlador e traduções                                            |
 
 `src/main.js` é a raiz de composição: liga as camadas e injeta os adaptadores do navegador. Os scripts são carregados na ordem do `index.html`, sem módulos ES, para que o projeto funcione ao abrir o arquivo direto.
@@ -114,9 +115,13 @@ npm install
 npm run check
 ```
 
-Use `npm run format` para formatar os arquivos JavaScript. O workflow do GitHub Actions executa testes, lint e verificação de formatação em cada pull request. É necessário Node 18 ou superior.
+Use `npm run format` para formatar os arquivos JavaScript. O workflow do GitHub Actions executa testes, lint e verificação de formatação em cada pull request e em cada push na `main` (Node 20). Para rodar localmente, é necessário Node 18 ou superior.
 
 O JSZip e a fonte Inter estão incluídos no projeto e são carregados localmente, sem dependência de CDN. Caracteres fora da cobertura do Inter, como japonês, usam as fontes disponíveis no sistema.
+
+## Contribuir
+
+Rode `npm run check` antes de abrir um pull request. Este projeto segue o [Código de Conduta](CODE_OF_CONDUCT.md).
 
 ## Licença
 

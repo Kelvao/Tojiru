@@ -48,14 +48,14 @@
   function createUseCases({ store, formats, saver, translator }) {
     const changeItems = (change, options) => store.update((state) => ({ items: change(state.items) }), options);
 
-    function titleChapters(items, useFolderNames) {
+    function titleChapters(items, { fromFolders = false } = {}) {
       const chapterName = translator.t("kind.chapter.name");
-      const fromFolder = (item) => useFolderNames && !item.manual && item.folder !== D.LOOSE_FOLDER;
-      return D.renameChapters(items, (number, item) => (fromFolder(item) ? item.folder : `${chapterName} ${number}`));
+      const useFolder = (item) => fromFolders && !item.manual && item.folder !== D.LOOSE_FOLDER;
+      return D.renameChapters(items, (number, item) => (useFolder(item) ? item.folder : `${chapterName} ${number}`));
     }
 
     const titleExtras = (items) =>
-      items.map((item) => (D.isChapter(item) ? item : { ...item, title: translator.t(`kind.${item.kind}.name`) }));
+      items.map((item) => (D.isChapter(item) ? item : { ...item, title: defaultTitleOf(item, items, translator.t) }));
 
     function outputFor(rawMetadata) {
       const metadata = D.normalizeMetadata(rawMetadata);
@@ -66,7 +66,7 @@
 
     return {
       loadFolder(pages) {
-        store.update(() => ({ items: titleExtras(titleChapters(D.buildItems(pages), false)), folderLoaded: true }));
+        store.update(() => ({ items: titleExtras(titleChapters(D.buildItems(pages))), folderLoaded: true }));
       },
       moveItem(index, offset) {
         changeItems((items) => D.moveItem(items, index, offset));
@@ -78,10 +78,10 @@
         changeItems((items) => D.setItemTitle(items, index, title), { quiet: true });
       },
       extractFolderNames() {
-        changeItems((items) => titleChapters(items, true));
+        changeItems((items) => titleChapters(items, { fromFolders: true }));
       },
       numberChapters() {
-        changeItems((items) => titleChapters(items, false));
+        changeItems(titleChapters);
       },
       clearTitles() {
         changeItems(D.clearTitles);

@@ -159,7 +159,7 @@ test("EPUB writer builds fixed-layout XHTML pages with proportionally scaled SVG
   assert.match(widePage, /name="viewport" content="width=1800, height=1200"/);
   assert.match(
     widePage,
-    /<svg[^>]*width="100vw" height="100vh" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/,
+    /<svg[^>]*width="100%" height="100%" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid meet">/,
   );
   assert.match(widePage, /<image width="1800" height="1200" xlink:href="\.\.\/images\/0004\.jpg"\/>/);
 

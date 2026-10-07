@@ -21,12 +21,32 @@
   const ALL_KINDS = [Kind.CHAPTER, Kind.COVER, Kind.CONTENTS, Kind.EXTRA, Kind.BACK_COVER];
   const MANUAL_KINDS = [Kind.CONTENTS, Kind.COVER, Kind.EXTRA, Kind.BACK_COVER];
 
+  const startsWithWord = (...words) => new RegExp(`^(?:${words.join("|")})(?![a-z])`);
+
   const KIND_RULES = {
     [Kind.CHAPTER]: { sortOrder: 2, namePattern: null },
-    [Kind.COVER]: { sortOrder: 0, namePattern: /^(capa|cover|front)/ },
-    [Kind.CONTENTS]: { sortOrder: 1, namePattern: /^(indice|index|sumario|toc|contents)/ },
-    [Kind.EXTRA]: { sortOrder: 3, namePattern: /^(extra|bonus|omake|especial|special|posfacio|prefacio)/ },
-    [Kind.BACK_COVER]: { sortOrder: 4, namePattern: /^(contra ?capa|back|rear)/ },
+    [Kind.COVER]: { sortOrder: 0, namePattern: startsWithWord("capas?", "covers?", "front(?:cover)?") },
+    [Kind.CONTENTS]: {
+      sortOrder: 1,
+      namePattern: startsWithWord("indices?", "index(?:es)?", "sumarios?", "toc", "contents"),
+    },
+    [Kind.EXTRA]: {
+      sortOrder: 3,
+      namePattern: startsWithWord(
+        "extras?",
+        "bonus",
+        "omakes?",
+        "especiais",
+        "especial",
+        "specials?",
+        "posfacios?",
+        "prefacios?",
+      ),
+    },
+    [Kind.BACK_COVER]: {
+      sortOrder: 4,
+      namePattern: startsWithWord("contra ?capas?", "back(?:cover)?", "rear(?:cover)?"),
+    },
   };
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

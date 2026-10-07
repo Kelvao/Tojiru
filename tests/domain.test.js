@@ -23,6 +23,30 @@ test("detectKind recognises names in Portuguese and English, ignoring accents an
   assert.equal(D.detectKind("cap 1"), D.Kind.CHAPTER);
 });
 
+test("detectKind matches keywords as whole words, not inside longer words", () => {
+  const chapters = [
+    "Extraordinary Tales",
+    "Background",
+    "Frontier",
+    "Coverage",
+    "Capacidade",
+    "Especialista",
+    "Rearguard",
+    "Tocando o Terror",
+    "Indexação",
+  ];
+  chapters.forEach((name) => assert.equal(D.detectKind(name), D.Kind.CHAPTER, name));
+  const expected = {
+    [D.Kind.COVER]: ["capa2", "Capas", "Covers", "Front Cover", "frontcover", "cover_01"],
+    [D.Kind.CONTENTS]: ["Índices", "indices", "Indexes", "toc", "Contents"],
+    [D.Kind.EXTRA]: ["extra 01", "Omake_2", "Omakes", "Bonus", "Especiais", "Specials", "Posfácio", "Prefácio"],
+    [D.Kind.BACK_COVER]: ["Back Cover", "backcover", "Contracapa", "contra capa 2", "rear"],
+  };
+  Object.entries(expected).forEach(([kind, names]) => {
+    names.forEach((name) => assert.equal(D.detectKind(name), kind, name));
+  });
+});
+
 test("buildItems groups by folder and orders cover, contents, chapters, extras, back cover", () => {
   const items = D.buildItems([
     page("M/contracapa.jpg"),

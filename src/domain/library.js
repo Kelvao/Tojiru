@@ -55,7 +55,19 @@
   const sortOrderOf = (item) => KIND_RULES[item.kind].sortOrder;
   const pagesOf = (items) => items.flatMap((item) => item.pages);
   const countPages = (items) => pagesOf(items).length;
-  const sortPagesByName = (pages) => [...pages].sort((a, b) => collator.compare(a.name, b.name));
+
+  function comparePages(a, b) {
+    const first = a.path.split("/");
+    const second = b.path.split("/");
+    const shared = Math.min(first.length, second.length);
+    for (let index = 0; index < shared; index++) {
+      const order = collator.compare(first[index], second[index]);
+      if (order) return order;
+    }
+    return first.length - second.length;
+  }
+
+  const sortPages = (pages) => [...pages].sort(comparePages);
 
   function normalizeName(fileName) {
     return fileName
@@ -101,7 +113,7 @@
   function buildItems(pages) {
     const { folders, loosePages } = splitByFolder(pages);
     const items = [...folders].map(([name, group]) =>
-      createItem({ folder: name, kind: detectKind(name), pages: sortPagesByName(group) }),
+      createItem({ folder: name, kind: detectKind(name), pages: sortPages(group) }),
     );
     const chapterPages = [];
     for (const page of loosePages) {
@@ -110,7 +122,7 @@
       else items.push(createItem({ folder: page.name, kind, pages: [page] }));
     }
     if (chapterPages.length) {
-      items.push(createItem({ folder: LOOSE_FOLDER, kind: Kind.CHAPTER, pages: sortPagesByName(chapterPages) }));
+      items.push(createItem({ folder: LOOSE_FOLDER, kind: Kind.CHAPTER, pages: sortPages(chapterPages) }));
     }
     return items.sort(compareItems);
   }
@@ -183,7 +195,7 @@
       list = insertByKind(list, createItem({ folder, kind, pages: [] }));
     }
     const ownerIndex = findOriginOwner(list, folder);
-    return updateItem(list, ownerIndex, { pages: sortPagesByName([...list[ownerIndex].pages, page]) });
+    return updateItem(list, ownerIndex, { pages: sortPages([...list[ownerIndex].pages, page]) });
   }
 
   function restoreItem(items, index) {

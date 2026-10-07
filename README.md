@@ -29,7 +29,7 @@ The title is required and also sets the file name. When you choose the folder, i
 
 - Each direct subfolder of the root becomes an item; deeper folders are grouped into it.
 - Loose images in the root form the `(root)` item, except files recognized as a cover, index, extra or back cover.
-- Pages are sorted by name in natural order (`2.jpg` before `10.jpg`).
+- Pages are sorted by path in natural order (`2.jpg` before `10.jpg`), so subfolders inside a chapter stay together (`Part 2` before `Part 10`).
 - Items come with their titles already filled in: chapters follow the "Chapter N" pattern, and the cover, index, extras and back cover get the name of their type.
 - **Extract from folders** replaces chapter titles with the name of each subfolder; loose pages in the root have no subfolder and stay numbered. **Generate numbering** goes back to the "Chapter N" pattern. Both overwrite chapter titles and leave the cover, index, extras, back cover and items created with **+ New item** untouched. **Clear names** empties all titles; items without a title use their type name or "Chapter N" when generating.
 - Detection recognizes Portuguese and English names, ignoring case and accents. You can change the type manually.

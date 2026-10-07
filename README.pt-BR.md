@@ -29,7 +29,7 @@ O título é obrigatório e também define o nome do arquivo. Ao escolher a past
 
 - Cada subpasta direta da raiz vira um item; pastas mais profundas ficam agrupadas nele.
 - Imagens soltas na raiz formam o item `(raiz)`, exceto arquivos reconhecidos como capa, índice, extra ou contracapa.
-- As páginas são ordenadas por nome em ordem natural (`2.jpg` antes de `10.jpg`).
+- As páginas são ordenadas pelo caminho em ordem natural (`2.jpg` antes de `10.jpg`), então subpastas dentro de um capítulo ficam agrupadas (`Parte 2` antes de `Parte 10`).
 - Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e capa, índice, extras e contracapa com o nome do tipo.
 - **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta; páginas soltas na raiz não têm subpasta e continuam numeradas. **Gerar numeração** volta ao padrão "Capítulo N". Os dois sobrescrevem os títulos dos capítulos e não alteram capa, índice, extras, contracapa nem itens criados com **+ Novo item**. **Limpar nomes** esvazia todos os títulos; itens sem título usam o nome do tipo ou "Capítulo N" na geração.
 - A detecção reconhece nomes em português e inglês, sem diferenciar maiúsculas ou acentos. Você pode alterar o tipo manualmente.

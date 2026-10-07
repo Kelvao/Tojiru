@@ -57,6 +57,32 @@ test("nested subfolders belong to their first-level folder", () => {
   assert.equal(items[0].pages.length, 2);
 });
 
+test("pages inside nested subfolders keep each subfolder together, in natural order", () => {
+  const items = D.buildItems([
+    page("M/Cap 1/Parte 10/1.jpg"),
+    page("M/Cap 1/Parte 2/2.jpg"),
+    page("M/Cap 1/Parte 2/1.jpg"),
+    page("M/Cap 1/Parte 10/2.jpg"),
+  ]);
+  assert.deepEqual(
+    items[0].pages.map((p) => p.path),
+    ["M/Cap 1/Parte 2/1.jpg", "M/Cap 1/Parte 2/2.jpg", "M/Cap 1/Parte 10/1.jpg", "M/Cap 1/Parte 10/2.jpg"],
+  );
+});
+
+test("restoreItem puts returned pages back in path order inside nested subfolders", () => {
+  const items = D.buildItems([page("M/Cap 1/A/1.jpg"), page("M/Cap 1/A/2.jpg"), page("M/Cap 1/B/1.jpg")]);
+  const picked = D.extractPages(items, [items[0].pages[1]], { kind: D.Kind.EXTRA, title: "" });
+  const restored = D.restoreItem(
+    picked,
+    picked.findIndex((item) => item.manual),
+  );
+  assert.deepEqual(
+    restored[0].pages.map((p) => p.path),
+    ["M/Cap 1/A/1.jpg", "M/Cap 1/A/2.jpg", "M/Cap 1/B/1.jpg"],
+  );
+});
+
 test("computeStartPages accumulates page counts from zero", () => {
   const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 2/1.jpg")]);
   assert.deepEqual([...D.computeStartPages(items)], [0, 1, 3]);

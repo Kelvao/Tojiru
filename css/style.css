@@ -210,6 +210,16 @@ main {
   border-top: 1px solid var(--line);
 }
 
+.er:has(:disabled),
+.drop:has(input:disabled) {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+[inert] {
+  opacity: 0.4;
+}
+
 .er:first-child {
   border-top: 0;
 }

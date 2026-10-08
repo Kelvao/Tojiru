@@ -25,6 +25,7 @@
       languageButton: byId("langToggle"),
       languageCode: byId("langCode"),
       formatButtons: documentRef.querySelectorAll("[data-format]"),
+      metadataFields: documentRef.querySelectorAll("[data-field] :is(input, select, textarea)"),
       picker: byId("picker"),
       pickName: byId("pickName"),
       pickKind: byId("pickKind"),
@@ -225,17 +226,36 @@
       elements.progress.value = percent;
     };
 
-    const setExportEnabled = (enabled) => {
+    let hasItems = false;
+    let generating = false;
+
+    function updateControls() {
+      const enabled = hasItems && !generating;
       elements.generateButton.disabled = !enabled;
       elements.sidecarButton.disabled = !enabled;
       elements.addButton.disabled = !enabled;
       elements.numberButton.disabled = !enabled;
       elements.clearButton.disabled = !enabled;
       elements.extractButton.disabled = !enabled;
+      elements.folderInput.disabled = generating;
+      elements.languageButton.disabled = generating;
+      elements.list.inert = generating;
+      elements.metadataFields.forEach((field) => {
+        field.disabled = generating;
+      });
+      elements.formatButtons.forEach((button) => {
+        button.disabled = generating;
+      });
+    }
+
+    const setExportEnabled = (enabled) => {
+      hasItems = enabled;
+      updateControls();
     };
 
     const setGenerating = (busy) => {
-      elements.generateButton.disabled = busy;
+      generating = busy;
+      updateControls();
     };
 
     function readMetadataForm() {
@@ -254,9 +274,9 @@
       };
     }
 
-    function fillSeriesIfEmpty(name) {
-      if (name && !elements.seriesInput.value) elements.seriesInput.value = name;
-    }
+    const setSeries = (name) => {
+      elements.seriesInput.value = name;
+    };
 
     function fillMangaLanguageOptions() {
       const locale = translator.language;
@@ -339,7 +359,7 @@
       setExportEnabled,
       setGenerating,
       readMetadataForm,
-      fillSeriesIfEmpty,
+      setSeries,
       fillPickerKinds,
       fillMangaLanguageOptions,
       openPicker,

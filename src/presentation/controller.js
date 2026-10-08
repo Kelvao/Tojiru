@@ -8,6 +8,7 @@
     const supportedLanguages = Object.keys(LANGUAGES);
     let statusMessage = null;
     let pickerSelection = new Set();
+    let seriesTouched = false;
 
     function showStatus(key, params = {}) {
       statusMessage = { key, params };
@@ -73,7 +74,11 @@
     function onFolderSelected(event) {
       const pages = readPages(event.target.files);
       useCases.loadFolder(pages);
-      view.fillSeriesIfEmpty(D.rootFolderName(pages));
+      const name = D.rootFolderName(pages);
+      if (name && (!seriesTouched || !elements.seriesInput.value)) {
+        view.setSeries(name);
+        seriesTouched = false;
+      }
     }
 
     function handleProgress({ stage, percent, current, total }) {
@@ -85,14 +90,16 @@
       view.clearFieldErrors();
       view.setGenerating(true);
       view.resetProgress();
+      let result;
+      let failure;
       try {
-        const result = await useCases.generate({ rawMetadata: view.readMetadataForm(), onProgress: handleProgress });
-        showStatus("status.done", { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) });
+        result = await useCases.generate({ rawMetadata: view.readMetadataForm(), onProgress: handleProgress });
       } catch (error) {
-        handleFailure(error);
-      } finally {
-        view.setGenerating(false);
+        failure = error;
       }
+      view.setGenerating(false);
+      if (failure) handleFailure(failure);
+      else showStatus("status.done", { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) });
     }
 
     function onPickerToggle(page, checked) {
@@ -115,6 +122,9 @@
 
     function bindEvents() {
       elements.folderInput.addEventListener("change", onFolderSelected);
+      elements.seriesInput.addEventListener("input", () => {
+        seriesTouched = true;
+      });
       elements.extractButton.addEventListener("click", () => useCases.extractFolderNames());
       elements.numberButton.addEventListener("click", () => useCases.numberChapters());
       elements.clearButton.addEventListener("click", () => useCases.clearTitles());

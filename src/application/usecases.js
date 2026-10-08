@@ -46,16 +46,17 @@
   }
 
   function createUseCases({ store, formats, saver, translator }) {
-    const changeItems = (change, options) => store.update((state) => ({ items: change(state.items) }), options);
-
-    function titleChapters(items, { fromFolders = false } = {}) {
-      const chapterName = translator.t("kind.chapter.name");
-      const useFolder = (item) => fromFolders && !item.manual && item.folder !== D.LOOSE_FOLDER;
-      return D.renameChapters(items, (number, item) => (useFolder(item) ? item.folder : `${chapterName} ${number}`));
+    function retitle(items) {
+      return items.map((item) => {
+        if (item.titleSource === D.TitleSource.USER) return item;
+        const title =
+          item.titleSource === D.TitleSource.FOLDER ? item.folder : defaultTitleOf(item, items, translator.t);
+        return title === item.title ? item : { ...item, title };
+      });
     }
 
-    const titleExtras = (items) =>
-      items.map((item) => (D.isChapter(item) ? item : { ...item, title: defaultTitleOf(item, items, translator.t) }));
+    const changeItems = (change, options) =>
+      store.update((state) => ({ items: retitle(change(state.items)) }), options);
 
     function outputFor(rawMetadata) {
       const metadata = D.normalizeMetadata(rawMetadata);
@@ -66,7 +67,7 @@
 
     return {
       loadFolder(pages) {
-        store.update(() => ({ items: titleExtras(titleChapters(D.buildItems(pages))), folderLoaded: true }));
+        store.update(() => ({ items: retitle(D.buildItems(pages)), folderLoaded: true }));
       },
       moveItem(index, offset) {
         changeItems((items) => D.moveItem(items, index, offset));
@@ -78,10 +79,13 @@
         changeItems((items) => D.setItemTitle(items, index, title), { quiet: true });
       },
       extractFolderNames() {
-        changeItems((items) => titleChapters(items, { fromFolders: true }));
+        changeItems((items) => D.markChapterTitles(items, true));
       },
       numberChapters() {
-        changeItems(titleChapters);
+        changeItems((items) => D.markChapterTitles(items, false));
+      },
+      refreshTitles() {
+        changeItems((items) => items);
       },
       clearTitles() {
         changeItems(D.clearTitles);

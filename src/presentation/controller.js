@@ -68,6 +68,7 @@
       const language = nextLanguage(translator.language, supportedLanguages);
       translator.setLanguage(language);
       languageStore.write(language);
+      useCases.refreshTitles();
       refreshLanguage();
     }
 

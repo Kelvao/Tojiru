@@ -23,6 +23,8 @@
     BACK_COVER: "back",
   });
 
+  const TitleSource = Object.freeze({ DEFAULT: "default", FOLDER: "folder", USER: "user" });
+
   const ReadingMode = Object.freeze({
     RIGHT_TO_LEFT: "YesAndRightToLeft",
     LEFT_TO_RIGHT: "Yes",
@@ -114,8 +116,16 @@
     return match ? match[0] : Kind.CHAPTER;
   }
 
-  function createItem({ folder, kind, pages, title = "", manual = false, origins = null }) {
-    return { folder, kind, title, pages, manual, origins };
+  function createItem({
+    folder,
+    kind,
+    pages,
+    title = "",
+    titleSource = TitleSource.DEFAULT,
+    manual = false,
+    origins = null,
+  }) {
+    return { folder, kind, title, titleSource, pages, manual, origins };
   }
 
   function compareItems(a, b) {
@@ -189,13 +199,22 @@
   const updateItem = (items, index, change) =>
     items.map((item, position) => (position === index ? { ...item, ...change } : item));
 
-  const setItemKind = (items, index, kind) => updateItem(items, index, { kind });
-  const setItemTitle = (items, index, title) => updateItem(items, index, { title });
-  const clearTitles = (items) => items.map((item) => ({ ...item, title: "" }));
+  const setItemKind = (items, index, kind) =>
+    items.map((item, position) => {
+      if (position !== index) return item;
+      return item.titleSource === TitleSource.USER
+        ? { ...item, kind }
+        : { ...item, kind, titleSource: TitleSource.DEFAULT };
+    });
+  const setItemTitle = (items, index, title) => updateItem(items, index, { title, titleSource: TitleSource.USER });
+  const clearTitles = (items) => items.map((item) => ({ ...item, title: "", titleSource: TitleSource.USER }));
 
-  function renameChapters(items, makeTitle) {
-    let number = 0;
-    return items.map((item) => (isChapter(item) ? { ...item, title: makeTitle(++number, item) } : item));
+  function markChapterTitles(items, fromFolders) {
+    return items.map((item) => {
+      if (!isChapter(item)) return item;
+      const fromFolder = fromFolders && !item.manual && item.folder !== LOOSE_FOLDER;
+      return { ...item, titleSource: fromFolder ? TitleSource.FOLDER : TitleSource.DEFAULT };
+    });
   }
 
   function originOf(items, page) {
@@ -211,7 +230,15 @@
     const remaining = items
       .map((item) => ({ ...item, pages: item.pages.filter((page) => !selected.has(page)) }))
       .filter((item) => item.pages.length > 0);
-    const manualItem = createItem({ folder: LOOSE_FOLDER, kind, title, pages: ordered, manual: true, origins });
+    const manualItem = createItem({
+      folder: LOOSE_FOLDER,
+      kind,
+      title,
+      titleSource: title ? TitleSource.USER : TitleSource.DEFAULT,
+      pages: ordered,
+      manual: true,
+      origins,
+    });
     return insertByKind(remaining, manualItem);
   }
 
@@ -275,6 +302,7 @@
     LOOSE_FOLDER,
     Kind,
     ReadingMode,
+    TitleSource,
     ALL_KINDS,
     MANUAL_KINDS,
     REQUIRED_FIELDS,
@@ -296,7 +324,7 @@
     setItemKind,
     setItemTitle,
     clearTitles,
-    renameChapters,
+    markChapterTitles,
     extractPages,
     restoreItem,
     normalizeMetadata,

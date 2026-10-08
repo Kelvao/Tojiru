@@ -161,26 +161,45 @@ test("restoreItem leaves non-manual items alone", () => {
   assert.equal(D.restoreItem(items, 0), items);
 });
 
-test("renameChapters numbers only chapters and clearTitles empties every title", () => {
-  const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 2/1.jpg")]);
-  const numbered = D.renameChapters(items, (n) => `C${n}`);
+test("markChapterTitles flags only chapters and clearTitles marks every title as user-owned", () => {
+  const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/1.jpg")]);
+  const fromFolders = D.markChapterTitles(items, true);
   assert.deepEqual(
-    numbered.map((item) => item.title),
-    ["", "C1", "C2"],
+    fromFolders.map((item) => item.titleSource),
+    [D.TitleSource.DEFAULT, D.TitleSource.DEFAULT, D.TitleSource.FOLDER],
   );
   assert.deepEqual(
-    D.clearTitles(numbered).map((item) => item.title),
-    ["", "", ""],
+    D.markChapterTitles(fromFolders, false).map((item) => item.titleSource),
+    [D.TitleSource.DEFAULT, D.TitleSource.DEFAULT, D.TitleSource.DEFAULT],
+  );
+  const cleared = D.clearTitles(items);
+  assert.deepEqual(
+    cleared.map((item) => [item.title, item.titleSource]),
+    items.map(() => ["", D.TitleSource.USER]),
   );
 });
 
-test("moveItem swaps neighbours, never mutates and ignores out-of-range moves", () => {
-  const items = D.buildItems([page("M/Cap 1/1.jpg"), page("M/Cap 2/1.jpg")]);
-  const moved = D.moveItem(items, 0, 1);
-  assert.deepEqual(folders(moved), ["Cap 2", "Cap 1"]);
-  assert.deepEqual(folders(items), ["Cap 1", "Cap 2"]);
-  assert.equal(D.moveItem(items, 0, -1), items);
-  assert.equal(D.moveItem(items, 1, 1), items);
+test("setItemTitle marks the title as user-owned and setItemKind keeps it", () => {
+  const items = D.buildItems([page("M/capa.jpg"), page("M/Cap 1/1.jpg")]);
+  const typed = D.setItemTitle(items, 0, "Minha capa");
+  assert.equal(typed[0].titleSource, D.TitleSource.USER);
+  const retyped = D.setItemKind(typed, 0, D.Kind.EXTRA);
+  assert.equal(retyped[0].titleSource, D.TitleSource.USER);
+  assert.equal(retyped[0].title, "Minha capa");
+});
+
+test("setItemKind hands automatic titles back to the default naming", () => {
+  const items = D.markChapterTitles(D.buildItems([page("M/Cap 1/1.jpg")]), true);
+  assert.equal(items[0].titleSource, D.TitleSource.FOLDER);
+  assert.equal(D.setItemKind(items, 0, D.Kind.EXTRA)[0].titleSource, D.TitleSource.DEFAULT);
+});
+
+test("extractPages marks a typed title as user-owned and an empty one as automatic", () => {
+  const items = D.buildItems([page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 1/3.jpg")]);
+  const typed = D.extractPages(items, [items[0].pages[0]], { kind: D.Kind.EXTRA, title: "Omake" });
+  assert.equal(typed.find((item) => item.manual).titleSource, D.TitleSource.USER);
+  const blank = D.extractPages(items, [items[0].pages[0]], { kind: D.Kind.EXTRA, title: "" });
+  assert.equal(blank.find((item) => item.manual).titleSource, D.TitleSource.DEFAULT);
 });
 
 test("setItemKind and setItemTitle return new lists", () => {

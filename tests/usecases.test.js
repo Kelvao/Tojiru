@@ -10,7 +10,7 @@ const translator = {
   t: (key, params) => (params ? `${key}${JSON.stringify(params)}` : key),
 };
 
-function setup() {
+function setup(activeTranslator = translator) {
   const saved = [];
   const written = [];
   const formats = {
@@ -34,7 +34,7 @@ function setup() {
     saveText: (file) => saved.push(file),
   };
   const store = U.createStore({ items: [], folderLoaded: false, outputFormat: "cbz" });
-  const useCases = U.createUseCases({ store, formats, saver, translator });
+  const useCases = U.createUseCases({ store, formats, saver, translator: activeTranslator });
   return { store, useCases, saved, written };
 }
 
@@ -209,4 +209,72 @@ test("generate uses the filled titles", async () => {
     written[0].entries.map((entry) => entry.title),
     ["kind.cover.name", "Cap 1", "Cap 2"],
   );
+});
+
+const titles = (store) => store.get().items.map((item) => item.title);
+
+test("changing an item's type regenerates its automatic title and renumbers the chapters", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.changeItemKind(0, "chapter");
+  assert.deepEqual(titles(store), ["kind.chapter.name 1", "kind.chapter.name 2", "kind.chapter.name 3"]);
+  useCases.changeItemKind(1, "extra");
+  assert.deepEqual(titles(store), ["kind.chapter.name 1", "kind.extra.name", "kind.chapter.name 2"]);
+});
+
+test("reordering chapters renumbers automatic titles but keeps typed ones", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.renameItem(1, "Prólogo");
+  useCases.moveItem(1, 1);
+  assert.deepEqual(titles(store), ["kind.cover.name", "kind.chapter.name 1", "Prólogo"]);
+  useCases.changeItemKind(2, "extra");
+  assert.equal(titles(store)[2], "Prólogo");
+});
+
+test("folder-name titles survive reordering until numbering is requested again", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.extractFolderNames();
+  useCases.moveItem(1, 1);
+  assert.deepEqual(titles(store), ["kind.cover.name", "Cap 2", "Cap 1"]);
+  useCases.numberChapters();
+  assert.deepEqual(titles(store), ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"]);
+});
+
+test("cleared titles stay empty when the list changes", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.clearTitles();
+  useCases.moveItem(1, 1);
+  useCases.changeItemKind(0, "extra");
+  assert.deepEqual(titles(store), ["", "", ""]);
+});
+
+test("refreshTitles rewrites automatic titles in the new interface language and keeps typed ones", () => {
+  let language = "en";
+  const switching = {
+    get language() {
+      return language;
+    },
+    t: (key) => `${language}:${key}`,
+  };
+  const { store, useCases } = setup(switching);
+  useCases.loadFolder(sampleFolder);
+  useCases.renameItem(2, "Final");
+  assert.deepEqual(titles(store), ["en:kind.cover.name", "en:kind.chapter.name 1", "Final"]);
+  language = "pt";
+  useCases.refreshTitles();
+  assert.deepEqual(titles(store), ["pt:kind.cover.name", "pt:kind.chapter.name 1", "Final"]);
+});
+
+test("a manual item created without a name gets its type name and follows type changes", () => {
+  const { store, useCases } = setup();
+  useCases.loadFolder(sampleFolder);
+  const pages = store.get().items[1].pages;
+  useCases.createManualItem({ pages: [pages[0]], kind: "extra", title: "" });
+  const extra = () => store.get().items.find((item) => item.manual);
+  assert.equal(extra().title, "kind.extra.name");
+  useCases.changeItemKind(store.get().items.indexOf(extra()), "toc");
+  assert.equal(extra().title, "kind.toc.name");
 });

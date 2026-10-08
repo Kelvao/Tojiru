@@ -39,8 +39,8 @@
       ["Penciller", metadata.penciller],
       ["Publisher", metadata.publisher],
       ["Genre", metadata.genres],
-      ["LanguageISO", metadata.language],
       ["PageCount", output.pages.length],
+      ["LanguageISO", metadata.language],
       ["Manga", metadata.readingMode],
     ];
     const body = fields.map(([name, value]) => xmlTag(name, value)).join("");

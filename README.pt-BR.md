@@ -43,11 +43,11 @@ O título é obrigatório e também define o nome do arquivo. Ao escolher a past
 | Autor e artista        | Artista é opcional e pode ser diferente do autor |
 | Gêneros                | Separe por vírgulas                              |
 | Editora, ano e sinopse | Opcionais; o ano tem 4 dígitos                   |
-| Idioma do mangá        | Código como `pt`, `en` ou `ja`                   |
+| Idioma do mangá        | Opcional; escolha um código ISO 639-1 da lista   |
 | Volume                 | Número usado para ordenar a série                |
 | Direção de leitura     | Padrão: direita para a esquerda                  |
 
-Campos vazios são omitidos dos metadados gerados.
+Campos vazios são omitidos dos metadados gerados. O formato EPUB exige um idioma, então ele usa `und` (indeterminado) quando o idioma do mangá está vazio. O campo aceita apenas códigos ISO 639-1 (`ja`, `en`, `pt`); variantes regionais como `pt-BR` não são suportadas, e qualquer outro valor bloqueia a geração até ser corrigido.
 
 ## Formatos
 

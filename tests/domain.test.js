@@ -221,6 +221,36 @@ test("validateMetadata reports missing required fields only", () => {
   assert.deepEqual([...D.validateMetadata(D.normalizeMetadata({ series: "X", writer: "", year: "" }))], []);
 });
 
+test("ISO 639-1 codes are unique, lowercase two-letter codes with a name in every UI language", () => {
+  const codes = D.ISO_639_1_CODES;
+  assert.equal(new Set(codes).size, codes.length);
+  codes.forEach((code) => assert.match(code, /^[a-z]{2}$/, code));
+  ["en", "pt"].forEach((locale) => {
+    const names = new Intl.DisplayNames([locale], { type: "language" });
+    codes.forEach((code) => assert.notEqual(names.of(code).toLowerCase(), code, `${locale}:${code}`));
+  });
+});
+
+test("normalizeMetadata lowercases the language code", () => {
+  assert.equal(D.normalizeMetadata({ series: "X", language: " JA " }).language, "ja");
+});
+
+test("validateMetadata only accepts ISO 639-1 language codes", () => {
+  const problems = (language) =>
+    D.validateMetadata(D.normalizeMetadata({ series: "X", language })).map((p) => ({ ...p }));
+  ["", "pt", "ja", "JA", "zh"].forEach((language) => assert.deepEqual(problems(language), [], language));
+  ["português", "pt-BR", "pt_BR", "jpn", "xx", "p", "1234"].forEach((language) =>
+    assert.deepEqual(problems(language), [{ field: "language", rule: "invalid" }], language),
+  );
+  assert.deepEqual(
+    D.validateMetadata(D.normalizeMetadata({ series: "", language: "português" })).map((p) => ({ ...p })),
+    [
+      { field: "series", rule: "required" },
+      { field: "language", rule: "invalid" },
+    ],
+  );
+});
+
 test("MetadataError carries the list of problems", () => {
   const error = new D.MetadataError([{ field: "series", rule: "required" }]);
   assert.equal(error.message, "Invalid metadata");

@@ -9,13 +9,13 @@
 
     const elements = {
       folderInput: byId("dir"),
+      mangaLanguageList: byId("langList"),
       folderStatus: byId("st"),
       list: byId("list"),
       summary: byId("sum"),
       progress: byId("pr"),
       status: byId("st2"),
       seriesInput: byId("series"),
-      mangaLanguageInput: byId("lang"),
       extractButton: byId("extract"),
       numberButton: byId("auto"),
       clearButton: byId("clear"),
@@ -258,9 +258,21 @@
       if (name && !elements.seriesInput.value) elements.seriesInput.value = name;
     }
 
-    const setMangaLanguage = (code) => {
-      elements.mangaLanguageInput.value = code;
-    };
+    function fillMangaLanguageOptions() {
+      const locale = translator.language;
+      const names = new Intl.DisplayNames([locale], { type: "language" });
+      const collator = new Intl.Collator(locale);
+      const capitalize = (name) => name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);
+      const options = D.ISO_639_1_CODES.map((code) => ({ code, name: capitalize(names.of(code)) }))
+        .sort((a, b) => collator.compare(a.name, b.name))
+        .map(({ code, name }) => {
+          const option = createElement("option");
+          option.value = code;
+          option.label = name;
+          return option;
+        });
+      elements.mangaLanguageList.replaceChildren(...options);
+    }
 
     function fillPickerKinds() {
       const selected = elements.pickKind.value;
@@ -328,8 +340,8 @@
       setGenerating,
       readMetadataForm,
       fillSeriesIfEmpty,
-      setMangaLanguage,
       fillPickerKinds,
+      fillMangaLanguageOptions,
       openPicker,
       updatePickerCount,
       readPickerChoice,

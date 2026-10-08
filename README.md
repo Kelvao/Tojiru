@@ -37,17 +37,17 @@ The title is required and also sets the file name. When you choose the folder, i
 
 ## Metadata
 
-| Field                    | Notes                                         |
-| ------------------------ | --------------------------------------------- |
-| Title                    | Required; also names the file                 |
-| Author and artist        | Artist is optional and may differ from author |
-| Genres                   | Separate with commas                          |
-| Publisher, year, summary | Optional; the year has 4 digits               |
-| Manga language           | A code such as `pt`, `en` or `ja`             |
-| Volume                   | Number used to order the series               |
-| Reading direction        | Default: right to left                        |
+| Field                    | Notes                                          |
+| ------------------------ | ---------------------------------------------- |
+| Title                    | Required; also names the file                  |
+| Author and artist        | Artist is optional and may differ from author  |
+| Genres                   | Separate with commas                           |
+| Publisher, year, summary | Optional; the year has 4 digits                |
+| Manga language           | Optional; pick an ISO 639-1 code from the list |
+| Volume                   | Number used to order the series                |
+| Reading direction        | Default: right to left                         |
 
-Empty fields are omitted from the generated metadata.
+Empty fields are omitted from the generated metadata. The EPUB format requires a language, so it uses `und` (undetermined) when the manga language is empty. The field accepts only ISO 639-1 codes (`ja`, `en`, `pt`); regional variants such as `pt-BR` are not supported, and any other value blocks generation until fixed.
 
 ## Formats
 

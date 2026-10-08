@@ -8,9 +8,6 @@
     const supportedLanguages = Object.keys(LANGUAGES);
     let statusMessage = null;
     let pickerSelection = new Set();
-    let mangaLanguageTouched = false;
-
-    const mangaLanguageCode = () => translator.language.split("-")[0];
 
     function showStatus(key, params = {}) {
       statusMessage = { key, params };
@@ -60,8 +57,8 @@
     function refreshLanguage() {
       view.applyStaticTranslations();
       view.renderLanguageCode(LANGUAGES);
-      if (!mangaLanguageTouched) view.setMangaLanguage(mangaLanguageCode());
       view.fillPickerKinds();
+      view.fillMangaLanguageOptions();
       render(store.get());
       view.renderStatus(statusMessage);
     }
@@ -131,9 +128,6 @@
       elements.pickCancel.addEventListener("click", () => view.closePicker());
       elements.picker.addEventListener("close", () => previews.releaseAll());
       elements.languageButton.addEventListener("click", toggleLanguage);
-      elements.mangaLanguageInput.addEventListener("input", () => {
-        mangaLanguageTouched = true;
-      });
     }
 
     function start() {

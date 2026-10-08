@@ -29,7 +29,7 @@
     const startPages = D.computeStartPages(items);
     return {
       metadata,
-      language: metadata.language || translator.language.split("-")[0],
+      language: metadata.language || D.UNDETERMINED_LANGUAGE,
       pages: D.pagesOf(items),
       entries: items.map((item, index) => ({
         title: titleOf(item, items, translate),

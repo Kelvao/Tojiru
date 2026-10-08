@@ -108,7 +108,7 @@ test("generate hands a self-contained output document to the selected format and
   );
   assert.deepEqual([...output.entries.map((entry) => entry.startPage)], [0, 1, 3]);
   assert.equal(output.pages.length, 4);
-  assert.equal(output.language, "pt");
+  assert.equal(output.language, D.UNDETERMINED_LANGUAGE);
   assert.equal(output.labels.contents, "kind.toc.label");
   assert.deepEqual([...output.metadata.genreList], ["A", "B"]);
   assert.equal(result.fileName, "Meu_ Mangá.cbz");

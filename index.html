@@ -223,9 +223,17 @@
                   <div class="er-head">
                     <label for="lang" data-i18n="field.language"></label><span class="tag"></span>
                   </div>
-                  <input id="lang" aria-describedby="hint-language" data-i18n-placeholder="placeholder.language" />
+                  <input
+                    id="lang"
+                    list="langList"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-describedby="hint-language"
+                    data-i18n-placeholder="placeholder.language"
+                  />
+                  <datalist id="langList"></datalist>
                   <div class="hint" id="hint-language" data-i18n="hint.language"></div>
-                  <div class="field-error" role="alert" data-i18n="error.required"></div>
+                  <div class="field-error" role="alert" data-i18n="error.language"></div>
                 </div>
                 <div class="er" data-field="volume">
                   <div class="er-head">

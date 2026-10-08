@@ -74,6 +74,42 @@ test("ComicInfo lists one Page per index item with the right offsets and types",
   assert.match(xml, /<Title>Meu Mangá &amp; Cia<\/Title>/);
 });
 
+test("ComicInfo lists its fields in the order defined by the schema", () => {
+  const { buildComicInfoXml } = Tojiru.infra.cbz;
+  const xml = buildComicInfoXml(
+    buildOutput(sampleItems(), {
+      volume: "1",
+      summary: "S",
+      year: "2020",
+      writer: "A",
+      penciller: "B",
+      publisher: "P",
+      language: "pt",
+    }),
+  );
+  const body = xml.split("<Pages>")[0];
+  const tags = [...body.matchAll(/^ {2}<(\w+)>/gm)].map((match) => match[1]);
+  assert.deepEqual(tags, [
+    "Title",
+    "Series",
+    "Volume",
+    "Summary",
+    "Year",
+    "Writer",
+    "Penciller",
+    "Publisher",
+    "Genre",
+    "PageCount",
+    "LanguageISO",
+    "Manga",
+  ]);
+});
+
+test("ComicInfo omits LanguageISO when the language is empty", () => {
+  const { buildComicInfoXml } = Tojiru.infra.cbz;
+  assert.doesNotMatch(buildComicInfoXml(buildOutput(sampleItems(), { language: "" })), /<LanguageISO>/);
+});
+
 test("ComicInfo marks the first page as cover when no cover item exists and omits empty fields", () => {
   const { buildComicInfoXml } = Tojiru.infra.cbz;
   const items = D.buildItems([page("M/Cap 1/1.jpg")]);

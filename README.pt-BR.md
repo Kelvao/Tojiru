@@ -20,7 +20,7 @@ Organize imagens de mangá e gere um **CBZ** ou **EPUB** com índice e metadados
 
 1. Abra `index.html` em um navegador com suporte à seleção de pastas (`webkitdirectory`).
 2. Selecione a pasta raiz do mangá.
-3. Revise o índice: edite títulos, tipos e ordem (▲▼). Use **+ Novo item** para separar páginas de um capítulo em um item de capa, índice, extra ou contracapa; **Desfazer** devolve as páginas ao item de origem.
+3. Revise o índice: edite títulos, tipos e ordem (▲▼). Use **+ Novo item** para separar páginas de um capítulo em um item de outro tipo (capa, cinta, primeira orelha, guarda, folha de guarda, folha de rosto, índice, extra, segunda orelha, contracapa ou lombada); **Desfazer** devolve as páginas ao item de origem.
 4. Preencha o título, escolha **CBZ** ou **EPUB** e clique em **Gerar**.
 
 O título é obrigatório e também define o nome do arquivo. Ao escolher a pasta, ele é preenchido com o nome da pasta raiz se estiver vazio. Os outros metadados são opcionais.
@@ -28,10 +28,10 @@ O título é obrigatório e também define o nome do arquivo. Ao escolher a past
 ## Como a pasta é organizada
 
 - Cada subpasta direta da raiz vira um item; pastas mais profundas ficam agrupadas nele.
-- Imagens soltas na raiz formam o item `(raiz)`, exceto arquivos reconhecidos como capa, índice, extra ou contracapa.
+- Imagens soltas na raiz formam o item `(raiz)`, exceto arquivos reconhecidos como qualquer tipo que não seja capítulo (capa, índice, extra, lombada etc.).
 - As páginas são ordenadas pelo caminho em ordem natural (`2.jpg` antes de `10.jpg`), então subpastas dentro de um capítulo ficam agrupadas (`Parte 2` antes de `Parte 10`).
-- Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e capa, índice, extras e contracapa com o nome do tipo. Esses títulos automáticos acompanham mudanças de tipo, de ordem e do idioma da interface; um título que você digitou nunca é alterado sozinho, e só **Extrair das pastas** e **Gerar numeração** sobrescrevem os de capítulos.
-- **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta; páginas soltas na raiz não têm subpasta e continuam numeradas. **Gerar numeração** volta ao padrão "Capítulo N". Os dois sobrescrevem os títulos dos capítulos e não alteram capa, índice, extras, contracapa nem itens criados com **+ Novo item**. **Limpar nomes** esvazia todos os títulos; itens sem título usam o nome do tipo ou "Capítulo N" na geração.
+- Os itens já vêm com título preenchido: capítulos no padrão "Capítulo N" e os demais tipos (capa, índice, extras, contracapa, lombada etc.) com o nome do tipo. Esses títulos automáticos acompanham mudanças de tipo, de ordem e do idioma da interface; um título que você digitou nunca é alterado sozinho, e só **Extrair das pastas** e **Gerar numeração** sobrescrevem os de capítulos.
+- **Extrair das pastas** troca os títulos dos capítulos pelo nome de cada subpasta; páginas soltas na raiz não têm subpasta e continuam numeradas. **Gerar numeração** volta ao padrão "Capítulo N". Os dois sobrescrevem os títulos dos capítulos e não alteram itens que não sejam capítulo nem itens criados com **+ Novo item**. **Limpar nomes** esvazia todos os títulos; itens sem título usam o nome do tipo ou "Capítulo N" na geração.
 - A detecção reconhece nomes em português e inglês, sem diferenciar maiúsculas ou acentos. O nome precisa começar com a palavra-chave inteira (`Extra 2`, `Capa`), e não dentro de uma palavra maior (`Extraordinary`). Você pode alterar o tipo manualmente.
 - Extensões aceitas: `jpg`, `jpeg`, `png`, `webp`, `gif`, `avif` e `bmp`.
 

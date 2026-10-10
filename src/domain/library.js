@@ -18,9 +18,16 @@
   const Kind = Object.freeze({
     CHAPTER: "chapter",
     COVER: "cover",
+    BAND: "band",
+    FRONT_FLAP: "frontFlap",
+    ENDPAPER: "endpaper",
+    FLYLEAF: "flyleaf",
+    TITLE_PAGE: "titlePage",
     CONTENTS: "toc",
     EXTRA: "extra",
+    BACK_FLAP: "backFlap",
     BACK_COVER: "back",
+    SPINE: "spine",
   });
 
   const TitleSource = Object.freeze({ DEFAULT: "default", FOLDER: "folder", USER: "user" });
@@ -31,20 +38,74 @@
     NONE: "No",
   });
 
-  const ALL_KINDS = [Kind.CHAPTER, Kind.COVER, Kind.CONTENTS, Kind.EXTRA, Kind.BACK_COVER];
-  const MANUAL_KINDS = [Kind.CONTENTS, Kind.COVER, Kind.EXTRA, Kind.BACK_COVER];
+  const ALL_KINDS = [
+    Kind.CHAPTER,
+    Kind.COVER,
+    Kind.BAND,
+    Kind.FRONT_FLAP,
+    Kind.ENDPAPER,
+    Kind.FLYLEAF,
+    Kind.TITLE_PAGE,
+    Kind.CONTENTS,
+    Kind.EXTRA,
+    Kind.BACK_FLAP,
+    Kind.BACK_COVER,
+    Kind.SPINE,
+  ];
+  const MANUAL_KINDS = [
+    Kind.CONTENTS,
+    Kind.COVER,
+    Kind.BAND,
+    Kind.FRONT_FLAP,
+    Kind.ENDPAPER,
+    Kind.FLYLEAF,
+    Kind.TITLE_PAGE,
+    Kind.EXTRA,
+    Kind.BACK_FLAP,
+    Kind.BACK_COVER,
+    Kind.SPINE,
+  ];
 
   const startsWithWord = (...words) => new RegExp(`^(?:${words.join("|")})(?![a-z])`);
 
   const KIND_RULES = {
-    [Kind.CHAPTER]: { sortOrder: 2, namePattern: null },
+    [Kind.CHAPTER]: { sortOrder: 7, namePattern: null },
+    [Kind.FRONT_FLAP]: {
+      sortOrder: 2,
+      namePattern: startsWithWord(
+        "primeiras? orelhas?",
+        "1[\u00aaa\u00b0o]? ?orelhas?",
+        "orelha ?1(?!\\d)",
+        "orelha ?frontal",
+        "front ?flaps?",
+      ),
+    },
+    [Kind.BACK_FLAP]: {
+      sortOrder: 9,
+      namePattern: startsWithWord(
+        "segundas? orelhas?",
+        "2[\u00aaa\u00b0o]? ?orelhas?",
+        "orelha ?2(?!\\d)",
+        "orelha ?traseira",
+        "back ?flaps?",
+        "rear ?flaps?",
+      ),
+    },
+    [Kind.FLYLEAF]: { sortOrder: 4, namePattern: startsWithWord("folhas? de guardas?", "fly ?leaf", "fly ?leaves") },
+    [Kind.ENDPAPER]: { sortOrder: 3, namePattern: startsWithWord("guardas?", "end ?papers?") },
+    [Kind.TITLE_PAGE]: {
+      sortOrder: 5,
+      namePattern: startsWithWord("folhas? de rostos?", "paginas? de titulos?", "title ?pages?"),
+    },
+    [Kind.SPINE]: { sortOrder: 11, namePattern: startsWithWord("lombadas?", "spines?") },
+    [Kind.BAND]: { sortOrder: 1, namePattern: startsWithWord("cintas?", "obi", "belly ?bands?") },
     [Kind.COVER]: { sortOrder: 0, namePattern: startsWithWord("capas?", "covers?", "front(?:cover)?") },
     [Kind.CONTENTS]: {
-      sortOrder: 1,
+      sortOrder: 6,
       namePattern: startsWithWord("indices?", "index(?:es)?", "sumarios?", "toc", "contents"),
     },
     [Kind.EXTRA]: {
-      sortOrder: 3,
+      sortOrder: 8,
       namePattern: startsWithWord(
         "extras?",
         "bonus",
@@ -57,7 +118,7 @@
       ),
     },
     [Kind.BACK_COVER]: {
-      sortOrder: 4,
+      sortOrder: 10,
       namePattern: startsWithWord("contra ?capas?", "back(?:cover)?", "rear(?:cover)?"),
     },
   };

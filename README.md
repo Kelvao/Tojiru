@@ -20,7 +20,7 @@ Organize manga images and generate a **CBZ** or **EPUB** with an index and metad
 
 1. Open `index.html` in a browser that supports folder selection (`webkitdirectory`).
 2. Select the manga's root folder.
-3. Review the index: edit titles, types and order (▲▼). Use **+ New item** to split pages off a chapter into a cover, index, extra or back cover item; **Undo** returns the pages to the original item.
+3. Review the index: edit titles, types and order (▲▼). Use **+ New item** to split pages off a chapter into an item of another type (cover, band, front flap, endpaper, flyleaf, title page, index, extra, back flap, back cover or spine); **Undo** returns the pages to the original item.
 4. Fill in the title, choose **CBZ** or **EPUB** and click **Generate**.
 
 The title is required and also sets the file name. When you choose the folder, it is filled in with the root folder's name if empty. The other metadata fields are optional.
@@ -28,10 +28,10 @@ The title is required and also sets the file name. When you choose the folder, i
 ## How the folder is organized
 
 - Each direct subfolder of the root becomes an item; deeper folders are grouped into it.
-- Loose images in the root form the `(root)` item, except files recognized as a cover, index, extra or back cover.
+- Loose images in the root form the `(root)` item, except files recognized as any non-chapter type (cover, index, extra, spine, etc.).
 - Pages are sorted by path in natural order (`2.jpg` before `10.jpg`), so subfolders inside a chapter stay together (`Part 2` before `Part 10`).
-- Items come with their titles already filled in: chapters follow the "Chapter N" pattern, and the cover, index, extras and back cover get the name of their type. These automatic titles follow type changes, reordering and the interface language; a title you type is never changed on its own, only **Extract from folders** and **Generate numbering** overwrite chapter titles.
-- **Extract from folders** replaces chapter titles with the name of each subfolder; loose pages in the root have no subfolder and stay numbered. **Generate numbering** goes back to the "Chapter N" pattern. Both overwrite chapter titles and leave the cover, index, extras, back cover and items created with **+ New item** untouched. **Clear names** empties all titles; items without a title use their type name or "Chapter N" when generating.
+- Items come with their titles already filled in: chapters follow the "Chapter N" pattern, and every other type (cover, index, extras, back cover, spine, etc.) gets the name of its type. These automatic titles follow type changes, reordering and the interface language; a title you type is never changed on its own, only **Extract from folders** and **Generate numbering** overwrite chapter titles.
+- **Extract from folders** replaces chapter titles with the name of each subfolder; loose pages in the root have no subfolder and stay numbered. **Generate numbering** goes back to the "Chapter N" pattern. Both overwrite chapter titles and leave every non-chapter item and items created with **+ New item** untouched. **Clear names** empties all titles; items without a title use their type name or "Chapter N" when generating.
 - Detection recognizes Portuguese and English names, ignoring case and accents. The name must start with the keyword as a whole word (`Extra 2`, `Cover`), not inside a longer one (`Extraordinary`). You can change the type manually.
 - Accepted extensions: `jpg`, `jpeg`, `png`, `webp`, `gif`, `avif` and `bmp`.
 

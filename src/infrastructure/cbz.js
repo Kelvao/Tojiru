@@ -11,9 +11,16 @@
 
   const PAGE_TYPES = {
     [D.Kind.COVER]: FRONT_COVER_TYPE,
+    [D.Kind.BAND]: "Other",
+    [D.Kind.FRONT_FLAP]: "Other",
+    [D.Kind.ENDPAPER]: "InnerCover",
+    [D.Kind.FLYLEAF]: "Other",
+    [D.Kind.TITLE_PAGE]: "Other",
     [D.Kind.CONTENTS]: "Other",
     [D.Kind.EXTRA]: "Other",
+    [D.Kind.BACK_FLAP]: "Other",
     [D.Kind.BACK_COVER]: "BackCover",
+    [D.Kind.SPINE]: "Other",
   };
 
   function xmlTag(name, value) {

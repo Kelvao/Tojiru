@@ -60,6 +60,36 @@ async function open(blob) {
   return JSZip.loadAsync(await blob.arrayBuffer());
 }
 
+test("ComicInfo maps the physical book parts to page types", () => {
+  const { buildComicInfoXml } = Tojiru.infra.cbz;
+  const items = D.buildItems([
+    page("M/capa.jpg"),
+    page("M/cinta.jpg"),
+    page("M/primeira orelha.jpg"),
+    page("M/guarda.jpg"),
+    page("M/folha de guarda.jpg"),
+    page("M/folha de rosto.jpg"),
+    page("M/Cap 1/1.jpg"),
+    page("M/segunda orelha.jpg"),
+    page("M/contracapa.jpg"),
+    page("M/lombada.jpg"),
+  ]);
+  const pages = buildComicInfoXml(buildOutput(items)).split("<Pages>")[1];
+  const types = [...pages.matchAll(/Image="(\d+)"(?: Type="(\w+)")?/g)].map((match) => match[2] ?? "");
+  assert.deepEqual(types, [
+    "FrontCover",
+    "Other",
+    "Other",
+    "InnerCover",
+    "Other",
+    "Other",
+    "",
+    "Other",
+    "BackCover",
+    "Other",
+  ]);
+});
+
 test("ComicInfo lists one Page per index item with the right offsets and types", () => {
   const { buildComicInfoXml } = Tojiru.infra.cbz;
   const xml = buildComicInfoXml(buildOutput(sampleItems()));

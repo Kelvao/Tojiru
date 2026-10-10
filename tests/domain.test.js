@@ -34,6 +34,13 @@ test("detectKind matches keywords as whole words, not inside longer words", () =
     "Rearguard",
     "Tocando o Terror",
     "Indexação",
+    "Guardiões",
+    "Guardado",
+    "Cintado",
+    "Orelhudo",
+    "Orelha 10",
+    "Spinel",
+    "Lombadinha",
   ];
   chapters.forEach((name) => assert.equal(D.detectKind(name), D.Kind.CHAPTER, name));
   const expected = {
@@ -41,6 +48,29 @@ test("detectKind matches keywords as whole words, not inside longer words", () =
     [D.Kind.CONTENTS]: ["Índices", "indices", "Indexes", "toc", "Contents"],
     [D.Kind.EXTRA]: ["extra 01", "Omake_2", "Omakes", "Bonus", "Especiais", "Specials", "Posfácio", "Prefácio"],
     [D.Kind.BACK_COVER]: ["Back Cover", "backcover", "Contracapa", "contra capa 2", "rear"],
+    [D.Kind.BAND]: ["Cinta", "cintas", "Obi", "Belly Band"],
+    [D.Kind.FRONT_FLAP]: [
+      "Primeira Orelha",
+      "1ª orelha",
+      "1a orelha",
+      "Orelha 1",
+      "Orelha frontal",
+      "Front Flap",
+      "frontflap",
+    ],
+    [D.Kind.BACK_FLAP]: [
+      "Segunda Orelha",
+      "2ª orelha",
+      "2a orelha",
+      "Orelha 2",
+      "Orelha traseira",
+      "Back Flap",
+      "Rear Flap",
+    ],
+    [D.Kind.ENDPAPER]: ["Guarda", "Guardas 2", "Endpaper", "End Papers"],
+    [D.Kind.FLYLEAF]: ["Folha de Guarda", "folhas de guarda", "Flyleaf", "Fly Leaf"],
+    [D.Kind.TITLE_PAGE]: ["Folha de Rosto", "Página de título", "Title Page"],
+    [D.Kind.SPINE]: ["Lombada", "lombada 2", "Spine"],
   };
   Object.entries(expected).forEach(([kind, names]) => {
     names.forEach((name) => assert.equal(D.detectKind(name), kind, name));
@@ -60,6 +90,25 @@ test("buildItems groups by folder and orders cover, contents, chapters, extras, 
   assert.deepEqual(
     items.map((item) => item.kind),
     ["cover", "toc", "chapter", "chapter", "extra", "back"],
+  );
+});
+
+test("buildItems orders physical book parts around the chapters", () => {
+  const items = D.buildItems([
+    page("M/lombada.jpg"),
+    page("M/segunda orelha.jpg"),
+    page("M/Cap 1/1.jpg"),
+    page("M/folha de rosto.jpg"),
+    page("M/folha de guarda.jpg"),
+    page("M/guarda.jpg"),
+    page("M/primeira orelha.jpg"),
+    page("M/cinta.jpg"),
+    page("M/contracapa.jpg"),
+    page("M/capa.jpg"),
+  ]);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ["cover", "band", "frontFlap", "endpaper", "flyleaf", "titlePage", "chapter", "backFlap", "back", "spine"],
   );
 });
 

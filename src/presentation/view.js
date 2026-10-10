@@ -2,6 +2,7 @@
   const D = Tojiru.domain;
   const { defaultTitleOf } = Tojiru.usecases;
   const HIDDEN_CLASS = "hide";
+  const ERROR_CLASS = "error";
 
   function createView({ documentRef, translator, previews }) {
     const byId = (id) => documentRef.getElementById(id);
@@ -212,7 +213,11 @@
     }
 
     function renderStatus(message) {
-      elements.status.textContent = message ? t(message.key, message.params) : "";
+      const notes = message?.notes ?? [];
+      elements.status.textContent = message
+        ? [message, ...notes].map((part) => t(part.key, part.params)).join(" ")
+        : "";
+      elements.status.classList.toggle(ERROR_CLASS, message?.severity === "error");
     }
 
     function resetProgress() {

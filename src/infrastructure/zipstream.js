@@ -1,4 +1,5 @@
 (function (Tojiru) {
+  const D = Tojiru.domain;
   const LOCAL_SIGNATURE = 0x04034b50;
   const DESCRIPTOR_SIGNATURE = 0x08074b50;
   const CENTRAL_SIGNATURE = 0x02014b50;
@@ -16,11 +17,10 @@
   const FLUSH_THRESHOLD = 1024 * 1024;
   const DOS_EPOCH_YEAR = 1980;
 
-  class ZipLimitError extends Error {
-    constructor(reason) {
-      super(`ZIP limit exceeded: ${reason}`);
+  class ZipLimitError extends D.AppError {
+    constructor(code) {
+      super(code, {}, { message: `ZIP limit exceeded: ${code}` });
       this.name = "ZipLimitError";
-      this.reason = reason;
     }
   }
 
@@ -144,7 +144,7 @@
 
     async function emit(bytes) {
       position += bytes.length;
-      if (position > MAX_UINT32) throw new ZipLimitError("archive larger than 4 GiB");
+      if (position > MAX_UINT32) throw new ZipLimitError(D.ErrorCode.ZIP_TOO_LARGE);
       pending.push(bytes);
       pendingLength += bytes.length;
       if (pendingLength >= FLUSH_THRESHOLD) await flush();
@@ -175,7 +175,7 @@
     }
 
     async function addEntry(name, source) {
-      if (entries.length >= MAX_ENTRIES) throw new ZipLimitError("more than 65535 entries");
+      if (entries.length >= MAX_ENTRIES) throw new ZipLimitError(D.ErrorCode.ZIP_TOO_MANY_PAGES);
       const nameBytes = encoder.encode(name);
       const stamp = dosDateTime(clock());
       const written = isStreamable(source)
@@ -210,7 +210,7 @@
     onProgress(100);
   }
 
-  async function writeArchive({ entries, createSink, fileName, onProgress, writeToMemory }) {
+  async function writeArchive({ entries, createSink, fileName, onProgress, onNotice, writeToMemory }) {
     if (!createSink) return writeToMemory();
     let sink = null;
     try {
@@ -219,7 +219,8 @@
       return await sink.close();
     } catch (error) {
       await sink?.abort();
-      if (error instanceof ZipLimitError) throw error;
+      if (error instanceof D.AppError) throw error;
+      onNotice({ code: D.NoticeCode.DISK_FALLBACK });
       return writeToMemory();
     }
   }

@@ -66,20 +66,57 @@
 
   const REQUIRED_FIELDS = Object.freeze(["series"]);
 
-  class MetadataError extends Error {
+  const ErrorCode = Object.freeze({
+    INVALID_METADATA: "invalidMetadata",
+    IMAGE_READ: "imageRead",
+    ZIP_TOO_LARGE: "zipTooLarge",
+    ZIP_TOO_MANY_PAGES: "zipTooManyPages",
+    STORAGE_FULL: "storageFull",
+    OUT_OF_MEMORY: "outOfMemory",
+    FILE_UNREADABLE: "fileUnreadable",
+    UNEXPECTED: "unexpected",
+  });
+
+  const NoticeCode = Object.freeze({ DISK_FALLBACK: "diskFallback" });
+
+  const ALLOCATION_FAILURE = /allocation|array length|string length|out of memory/i;
+
+  class AppError extends Error {
+    constructor(code, params = {}, { cause, message } = {}) {
+      super(message ?? code, { cause });
+      this.name = "AppError";
+      this.code = code;
+      this.params = params;
+    }
+  }
+
+  class MetadataError extends AppError {
     constructor(problems) {
-      super("Invalid metadata");
+      super(ErrorCode.INVALID_METADATA, {}, { message: "Invalid metadata" });
       this.name = "MetadataError";
       this.problems = problems;
     }
   }
 
-  class ImageReadError extends Error {
-    constructor(pageName) {
-      super(`Could not read image ${pageName}`);
+  class ImageReadError extends AppError {
+    constructor(pageName, options = {}) {
+      super(ErrorCode.IMAGE_READ, { name: pageName }, { ...options, message: `Could not read image ${pageName}` });
       this.name = "ImageReadError";
       this.pageName = pageName;
     }
+  }
+
+  function toAppError(error) {
+    if (error instanceof AppError) return error;
+    const options = { cause: error };
+    if (error?.name === "QuotaExceededError") return new AppError(ErrorCode.STORAGE_FULL, {}, options);
+    if (error?.name === "NotReadableError" || error?.name === "NotFoundError") {
+      return new AppError(ErrorCode.FILE_UNREADABLE, {}, options);
+    }
+    if (error?.name === "RangeError" && ALLOCATION_FAILURE.test(error.message)) {
+      return new AppError(ErrorCode.OUT_OF_MEMORY, {}, options);
+    }
+    return new AppError(ErrorCode.UNEXPECTED, { detail: String(error?.message ?? error) }, options);
   }
 
   const isImageName = (name) => IMAGE_EXTENSION.test(name);
@@ -306,8 +343,12 @@
     ALL_KINDS,
     MANUAL_KINDS,
     REQUIRED_FIELDS,
+    ErrorCode,
+    NoticeCode,
+    AppError,
     MetadataError,
     ImageReadError,
+    toAppError,
     isImageName,
     extensionOf,
     isChapter,

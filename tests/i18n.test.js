@@ -23,7 +23,10 @@ test("translator interpolates parameters and chooses plural forms", () => {
   const translator = i18n.createTranslator({ translations: i18n.TRANSLATIONS, fallback: "en", language: "en" });
   assert.equal(translator.t("count.pages", { n: 1 }), "1 page");
   assert.equal(translator.t("count.pages", { n: 3 }), "3 pages");
-  assert.equal(translator.t("status.error", { message: "boom" }), "Error: boom");
+  assert.equal(
+    translator.t("error.unexpected", { detail: "boom" }),
+    "Something unexpected went wrong: boom. Try again; if it keeps happening, report it on GitHub.",
+  );
   translator.setLanguage("pt-BR");
   assert.equal(translator.t("count.chapters", { n: 2 }), "2 capítulos");
   assert.equal(translator.t("status.done", { n: 1, size: "0.1" }), "Pronto: 1 página, 0.1 MB.");

@@ -10,7 +10,7 @@ const translator = {
   t: (key, params) => (params ? `${key}${JSON.stringify(params)}` : key),
 };
 
-function setup(activeTranslator = translator) {
+function setup(activeTranslator = translator, writeOverride = null) {
   const saved = [];
   const written = [];
   const formats = {
@@ -21,7 +21,8 @@ function setup(activeTranslator = translator) {
         mediaType: "application/xml",
         build: (output) => `xml:${output.entries.length}`,
       },
-      write: async (output, onProgress) => {
+      write: async (output, onProgress, options) => {
+        if (writeOverride) return writeOverride(output, onProgress, options);
         written.push(output);
         onProgress({ stage: "packing", percent: 100 });
         return { blob: { size: 42 }, pageCount: output.pages.length };
@@ -277,4 +278,46 @@ test("a manual item created without a name gets its type name and follows type c
   assert.equal(extra().title, "kind.extra.name");
   useCases.changeItemKind(store.get().items.indexOf(extra()), "toc");
   assert.equal(extra().title, "kind.toc.name");
+});
+
+test("generate wraps unknown writer failures in an AppError and keeps the original as cause", async () => {
+  const original = Object.assign(new Error("disk"), { name: "QuotaExceededError" });
+  const { useCases } = setup(translator, async () => {
+    throw original;
+  });
+  useCases.loadFolder(sampleFolder);
+  await assert.rejects(
+    useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} }),
+    (error) => error.code === D.ErrorCode.STORAGE_FULL && error.cause === original,
+  );
+});
+
+test("generate lets application errors through unchanged", async () => {
+  const failure = new D.ImageReadError("a.png");
+  const { useCases } = setup(translator, async () => {
+    throw failure;
+  });
+  useCases.loadFolder(sampleFolder);
+  await assert.rejects(
+    useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} }),
+    (error) => error === failure,
+  );
+});
+
+test("generate returns the notices reported by the writer", async () => {
+  const { useCases } = setup(translator, async (output, onProgress, { onNotice }) => {
+    onNotice({ code: D.NoticeCode.DISK_FALLBACK });
+    return { blob: { size: 1 }, pageCount: output.pages.length };
+  });
+  useCases.loadFolder(sampleFolder);
+  const result = await useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} });
+  assert.deepEqual(result.notices, [{ code: "diskFallback" }]);
+});
+
+test("exportSidecar wraps failures too", () => {
+  const { useCases } = setup();
+  assert.throws(
+    () => useCases.exportSidecar({ series: "" }),
+    (error) => error instanceof D.MetadataError && error.code === D.ErrorCode.INVALID_METADATA,
+  );
 });

@@ -274,7 +274,7 @@ ${spineItems}  </spine>
       );
     }
 
-    async function write(output, onProgress, { fileName = "output.epub" } = {}) {
+    async function write(output, onProgress, { fileName = "output.epub", onNotice = () => {} } = {}) {
       const images = await prepareAllImages(output.pages, onProgress);
       const pages = createPages(output, images);
       const navEntries = createNavEntries(output, pages);
@@ -288,6 +288,7 @@ ${spineItems}  </spine>
         createSink,
         fileName,
         onProgress: report,
+        onNotice,
         writeToMemory: () => writeToMemory(entries, report),
       });
       return { blob, pageCount: pages.length };

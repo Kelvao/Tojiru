@@ -100,21 +100,31 @@
         if (formats[formatId]) store.update(() => ({ outputFormat: formatId }));
       },
       async generate({ rawMetadata, onProgress }) {
-        const format = formats[store.get().outputFormat];
-        const output = outputFor(rawMetadata);
-        const fileName = D.outputFileName(output.metadata.series, format.extension);
-        const { blob, pageCount } = await format.write(output, onProgress, { fileName });
-        saver.save(blob, fileName);
-        return { fileName, pageCount, size: blob.size };
+        try {
+          const format = formats[store.get().outputFormat];
+          const output = outputFor(rawMetadata);
+          const fileName = D.outputFileName(output.metadata.series, format.extension);
+          const notices = [];
+          const onNotice = (notice) => notices.push(notice);
+          const { blob, pageCount } = await format.write(output, onProgress, { fileName, onNotice });
+          saver.save(blob, fileName);
+          return { fileName, pageCount, size: blob.size, notices };
+        } catch (error) {
+          throw D.toAppError(error);
+        }
       },
       exportSidecar(rawMetadata) {
-        const { sidecar } = formats[store.get().outputFormat];
-        if (!sidecar) return;
-        saver.saveText({
-          content: sidecar.build(outputFor(rawMetadata)),
-          mediaType: sidecar.mediaType,
-          fileName: sidecar.fileName,
-        });
+        try {
+          const { sidecar } = formats[store.get().outputFormat];
+          if (!sidecar) return;
+          saver.saveText({
+            content: sidecar.build(outputFor(rawMetadata)),
+            mediaType: sidecar.mediaType,
+            fileName: sidecar.fileName,
+          });
+        } catch (error) {
+          throw D.toAppError(error);
+        }
       },
     };
   }

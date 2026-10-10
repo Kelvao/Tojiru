@@ -85,8 +85,8 @@
           mediaType: NATIVE_MEDIA_TYPES[extension],
           ...(await measure(page.source)),
         };
-      } catch {
-        throw new D.ImageReadError(page.name);
+      } catch (error) {
+        throw new D.ImageReadError(page.name, { cause: error });
       }
     }
 

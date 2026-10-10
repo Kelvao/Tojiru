@@ -52,7 +52,22 @@
       "placeholder.summary": "Ex.: A young pirate sets out to find a treasure",
       "error.required": "Fill in this field.",
       "error.language": "Choose a language from the list.",
-      "status.invalid": "Check the highlighted fields.",
+      "error.invalidMetadata": "Check the highlighted fields.",
+      "error.imageRead":
+        "Could not read the image “{name}”. It may be corrupted or in an unsupported format. Replace or remove it, then try again.",
+      "error.zipTooLarge":
+        "The file would exceed 4 GiB, the limit of the ZIP format. Split the manga into smaller volumes and generate each one separately.",
+      "error.zipTooManyPages":
+        "The file would have more than 65,535 images, the limit of the ZIP format. Split the manga into smaller volumes.",
+      "error.storageFull":
+        "There is not enough free space in the browser's storage to build the file. Free up disk space and try again.",
+      "error.outOfMemory":
+        "The browser ran out of memory while building the file. Close other tabs or split the manga into smaller volumes.",
+      "error.fileUnreadable":
+        "A file could no longer be read. Do not move, rename or delete the folder while generating; select it again and try once more.",
+      "error.unexpected":
+        "Something unexpected went wrong: {detail}. Try again; if it keeps happening, report it on GitHub.",
+      "notice.diskFallback": "Saving to disk was not possible, so the file was built in memory.",
       "picker.nameHint": "If left empty, the default name for the type is used.",
       "reading.rtl": "Manga, right to left",
       "reading.ltr": "Manga, left to right",
@@ -93,11 +108,9 @@
       "item.root": "(root)",
       "status.packing": "Packing...",
       "status.reading": "Reading images... {current}/{total}",
-      "status.imageError": "Could not read image {name}",
       "format.label": "Output format",
       "epub.start": "Start of story",
       "status.done": { one: "Done: {n} page, {size} MB.", other: "Done: {n} pages, {size} MB." },
-      "status.error": "Error: {message}",
       "lang.change": "Change language",
       "link.github": "View project on GitHub",
     },
@@ -146,7 +159,21 @@
       "placeholder.summary": "Ex.: Um jovem pirata parte em busca de um tesouro",
       "error.required": "Preencha este campo.",
       "error.language": "Escolha um idioma da lista.",
-      "status.invalid": "Verifique os campos destacados.",
+      "error.invalidMetadata": "Verifique os campos destacados.",
+      "error.imageRead":
+        "Não foi possível ler a imagem “{name}”. Ela pode estar corrompida ou em um formato não suportado. Substitua ou remova o arquivo e tente novamente.",
+      "error.zipTooLarge":
+        "O arquivo passaria de 4 GiB, o limite do formato ZIP. Divida o mangá em volumes menores e gere cada um separadamente.",
+      "error.zipTooManyPages":
+        "O arquivo teria mais de 65.535 imagens, o limite do formato ZIP. Divida o mangá em volumes menores.",
+      "error.storageFull":
+        "Não há espaço livre suficiente no armazenamento do navegador para montar o arquivo. Libere espaço em disco e tente novamente.",
+      "error.outOfMemory":
+        "O navegador ficou sem memória ao montar o arquivo. Feche outras abas ou divida o mangá em volumes menores.",
+      "error.fileUnreadable":
+        "Um arquivo não pôde mais ser lido. Não mova, renomeie nem apague a pasta durante a geração; selecione-a de novo e tente outra vez.",
+      "error.unexpected": "Algo inesperado deu errado: {detail}. Tente novamente; se continuar, reporte no GitHub.",
+      "notice.diskFallback": "Não foi possível gravar em disco, então o arquivo foi montado na memória.",
       "picker.nameHint": "Se ficar vazio, usa o nome padrão do tipo.",
       "reading.rtl": "Mangá, da direita para a esquerda",
       "reading.ltr": "Mangá, da esquerda para a direita",
@@ -187,11 +214,9 @@
       "item.root": "(raiz)",
       "status.packing": "Empacotando...",
       "status.reading": "Lendo imagens... {current}/{total}",
-      "status.imageError": "Não foi possível ler a imagem {name}",
       "format.label": "Formato de saída",
       "epub.start": "Início da leitura",
       "status.done": { one: "Pronto: {n} página, {size} MB.", other: "Pronto: {n} páginas, {size} MB." },
-      "status.error": "Erro: {message}",
       "lang.change": "Mudar idioma",
       "link.github": "Ver projeto no GitHub",
     },

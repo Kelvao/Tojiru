@@ -3,8 +3,9 @@ const assert = require("node:assert");
 const JSZip = require("jszip");
 const { loadScripts } = require("./load");
 
-const { createZipWriter, ZipLimitError } = loadScripts(["src/infrastructure/zipstream.js"], { TextEncoder }).infra
-  .zipstream;
+const { createZipWriter, ZipLimitError } = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], {
+  TextEncoder,
+}).infra.zipstream;
 
 const FIXED_CLOCK = () => new Date(2024, 4, 17, 13, 45, 30);
 
@@ -67,4 +68,40 @@ test("zip writer rejects more entries than the classic ZIP format allows", async
   const writer = createZipWriter({ sink: memorySink(), clock: FIXED_CLOCK });
   for (let index = 0; index < 0xffff; index++) await writer.addEntry(`${index}`, Buffer.alloc(0));
   await assert.rejects(writer.addEntry("overflow", Buffer.alloc(0)), (error) => error instanceof ZipLimitError);
+});
+
+test("writeArchive reports a notice when it falls back to memory", async () => {
+  const { writeArchive } = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], { TextEncoder })
+    .infra.zipstream;
+  const notices = [];
+  const result = await writeArchive({
+    entries: [],
+    createSink: async () => {
+      throw new Error("OPFS unavailable");
+    },
+    fileName: "a.cbz",
+    onProgress: () => {},
+    onNotice: (notice) => notices.push(notice.code),
+    writeToMemory: async () => "memory",
+  });
+  assert.equal(result, "memory");
+  assert.deepEqual(notices, ["diskFallback"]);
+});
+
+test("writeArchive does not hide application errors behind the memory fallback", async () => {
+  const lib = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], { TextEncoder });
+  const failure = new lib.domain.ImageReadError("a.png");
+  await assert.rejects(
+    lib.infra.zipstream.writeArchive({
+      entries: [],
+      createSink: async () => {
+        throw failure;
+      },
+      fileName: "a.cbz",
+      onProgress: () => {},
+      onNotice: () => assert.fail("no fallback expected"),
+      writeToMemory: async () => assert.fail("no fallback expected"),
+    }),
+    (error) => error === failure,
+  );
 });

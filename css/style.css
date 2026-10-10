@@ -510,6 +510,10 @@ button.lnk {
   color: var(--mu);
 }
 
+#st2.error {
+  color: var(--error);
+}
+
 progress {
   appearance: none;
   display: block;

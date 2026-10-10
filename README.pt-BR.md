@@ -84,6 +84,7 @@ Ao gerar o arquivo, o Tojiru tenta gravá-lo aos poucos no armazenamento privado
 - No caminho em disco, o arquivo gerado tem limite de 4 GiB e 65.535 entradas (formato ZIP clássico, sem ZIP64). Acima disso, a geração falha com erro.
 - No caminho em disco, o EPUB armazena também os arquivos XML sem compressão; no caminho em memória eles são comprimidos. O arquivo `mimetype` fica sempre em primeiro lugar e sem compressão, como a especificação exige.
 - Duas abas gerando ao mesmo tempo podem apagar os arquivos temporários uma da outra.
+- As falhas aparecem no idioma da interface, em vermelho, dizendo o que aconteceu e o que fazer em seguida (uma imagem corrompida cita o arquivo; um limite de tamanho sugere dividir o mangá). Quando o app recorre à memória, a mensagem de sucesso acrescenta um aviso. Falhas inesperadas também registram o erro original no console do navegador.
 
 A geração de EPUB mede todas as imagens antes de empacotar e pode demorar mais que a de CBZ, principalmente com AVIF e BMP.
 
@@ -98,7 +99,7 @@ O código é dividido em camadas, e o teste `tests/architecture.test.js` impede 
 | Domínio        | `src/domain`         | Regras puras: itens, ordenação, detecção de tipos, metadados                  |
 | Aplicação      | `src/application`    | Casos de uso (carregar pasta, gerar arquivo) com portas injetadas             |
 | Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura e conversão de imagens, OPFS |
-| Apresentação   | `src/presentation`   | Interface, controlador e traduções                                            |
+| Apresentação   | `src/presentation`   | Interface, controlador, traduções e feedback ao usuário                       |
 
 `src/main.js` é a raiz de composição: liga as camadas e injeta os adaptadores do navegador. Os scripts são carregados na ordem do `index.html`, sem módulos ES, para que o projeto funcione ao abrir o arquivo direto.
 

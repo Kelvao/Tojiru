@@ -76,7 +76,7 @@
       );
     }
 
-    async function write(output, onProgress, { fileName = "output.cbz" } = {}) {
+    async function write(output, onProgress, { fileName = "output.cbz", onNotice = () => {} } = {}) {
       const entries = buildEntries(output);
       const report = (percent) => onProgress({ stage: "packing", percent });
       const blob = await writeArchive({
@@ -84,6 +84,7 @@
         createSink,
         fileName,
         onProgress: report,
+        onNotice,
         writeToMemory: () => writeToMemory(entries, report),
       });
       return { blob, pageCount: output.pages.length };

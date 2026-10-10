@@ -84,6 +84,7 @@ When generating the file, Tojiru tries to write it piece by piece to the browser
 - On the disk path, the generated file is limited to 4 GiB and 65,535 entries (classic ZIP format, no ZIP64). Above that, generation fails with an error.
 - On the disk path, the EPUB also stores its XML files uncompressed; on the in-memory path they are compressed. The `mimetype` file is always first and uncompressed, as the specification requires.
 - Two tabs generating at the same time may delete each other's temporary files.
+- Failures are shown in the interface language, in red, with what happened and what to do next (a corrupted image names the file; a size limit suggests splitting the manga). When the app falls back to memory, the success message adds a notice about it. Unexpected failures also log the original error to the browser console.
 
 EPUB generation measures all images before packaging and may take longer than CBZ, especially with AVIF and BMP.
 
@@ -98,7 +99,7 @@ The code is split into layers, and the `tests/architecture.test.js` test prevent
 | Domain         | `src/domain`         | Pure rules: items, sorting, type detection, metadata                    |
 | Application    | `src/application`    | Use cases (load folder, generate file) with injected ports              |
 | Infrastructure | `src/infrastructure` | CBZ and EPUB writers, streaming ZIP, image reading and conversion, OPFS |
-| Presentation   | `src/presentation`   | Interface, controller and translations                                  |
+| Presentation   | `src/presentation`   | Interface, controller, translations and user feedback                   |
 
 `src/main.js` is the composition root: it wires the layers together and injects the browser adapters. Scripts are loaded in the order of `index.html`, without ES modules, so the project works when the file is opened directly.
 

@@ -2,6 +2,7 @@
   const D = Tojiru.domain;
   const BYTES_PER_MB = 1024 * 1024;
   const { LANGUAGES, nextLanguage } = Tojiru.i18n;
+  const { describeFailure, describeNotices } = Tojiru.ui.feedback;
 
   function createController({ store, useCases, formats, view, translator, languageStore, readPages, previews }) {
     const { elements } = view;
@@ -10,27 +11,17 @@
     let pickerSelection = new Set();
     let seriesTouched = false;
 
-    function showStatus(key, params = {}) {
-      statusMessage = { key, params };
+    function showStatus(key, params = {}, extras = {}) {
+      statusMessage = { key, params, ...extras };
       view.renderStatus(statusMessage);
     }
 
-    function describeError(error) {
-      if (error instanceof D.ImageReadError) {
-        return { key: "status.imageError", params: { name: error.pageName } };
-      }
-      return { key: "status.error", params: { message: error.message } };
-    }
-
     function handleFailure(error) {
-      if (error instanceof D.MetadataError) {
-        view.hideProgress();
-        view.showFieldErrors(error.problems);
-        showStatus("status.invalid");
-        return;
-      }
-      const { key, params } = describeError(error);
-      showStatus(key, params);
+      view.hideProgress();
+      const failure = describeFailure(error);
+      if (error instanceof D.MetadataError) view.showFieldErrors(error.problems);
+      else if (!failure.expected) console.error(failure.cause);
+      showStatus(failure.key, failure.params, { severity: "error" });
     }
 
     function onExportSidecar() {
@@ -100,7 +91,10 @@
       }
       view.setGenerating(false);
       if (failure) handleFailure(failure);
-      else showStatus("status.done", { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) });
+      else {
+        const params = { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) };
+        showStatus("status.done", params, { notes: describeNotices(result.notices) });
+      }
     }
 
     function onPickerToggle(page, checked) {

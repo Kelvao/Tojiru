@@ -70,7 +70,7 @@
         source: page.source,
         options: STORE_ONLY,
       })),
-      { path: COMIC_INFO_FILE, source: buildComicInfoXml(output), options: {} },
+      { path: COMIC_INFO_FILE, source: buildComicInfoXml(output) },
     ];
   }
 

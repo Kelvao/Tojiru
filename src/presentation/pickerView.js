@@ -38,6 +38,7 @@
     }
 
     function openPicker(items, onToggle) {
+      previews.releaseAll();
       elements.pickName.value = "";
       elements.pickPages.replaceChildren(...items.map((item) => createPageGroup(item, onToggle)));
       elements.picker.showModal();

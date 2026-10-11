@@ -1,39 +1,40 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
-  const BYTES_PER_MB = 1024 * 1024;
+  const { MetadataError } = Tojiru.domain;
   const { LANGUAGES, nextLanguage } = Tojiru.i18n;
   const { describeFailure, describeNotices } = Tojiru.ui.feedback;
+  const BYTES_PER_MB = 1024 * 1024;
 
-  function createController({ store, useCases, formats, view, translator, languageStore, readPages, previews }) {
-    const { elements } = view;
+  const megabytes = (bytes) => (bytes / BYTES_PER_MB).toFixed(1);
+
+  function createController({ store, useCases, formats, view, translator, languageStore, readPages }) {
     const supportedLanguages = Object.keys(LANGUAGES);
     let statusMessage = null;
     let pickerSelection = new Set();
-    let seriesTouched = false;
+    let seriesTypedByUser = false;
 
     function showStatus(key, params = {}, extras = {}) {
       statusMessage = { key, params, ...extras };
       view.renderStatus(statusMessage);
     }
 
-    function handleFailure(error) {
+    function showFailure(error) {
       view.hideProgress();
       const failure = describeFailure(error);
-      if (error instanceof D.MetadataError) view.showFieldErrors(error.problems);
+      if (error instanceof MetadataError) view.showFieldErrors(error.problems);
       else if (!failure.expected) console.error(failure.cause);
       showStatus(failure.key, failure.params, { severity: "error" });
     }
 
-    function onExportSidecar() {
-      view.clearFieldErrors();
-      try {
-        useCases.exportSidecar(view.readMetadataForm());
-      } catch (error) {
-        handleFailure(error);
-      }
+    function showSuccess({ pageCount, size, notices }) {
+      showStatus("status.done", { n: pageCount, size: megabytes(size) }, { notes: describeNotices(notices) });
     }
 
-    const intents = {
+    function showProgress({ stage, percent, current, total }) {
+      view.showProgress(percent);
+      showStatus(stage === "reading" ? "status.reading" : "status.packing", { current, total });
+    }
+
+    const itemIntents = {
       onMove: (index, offset) => useCases.moveItem(index, offset),
       onRename: (index, title) => useCases.renameItem(index, title),
       onKindChange: (index, kind) => useCases.changeItemKind(index, kind),
@@ -42,8 +43,9 @@
 
     function render(state) {
       view.renderFormat(formats, state.outputFormat);
-      view.renderLibrary(state, intents);
-      view.setExportEnabled(state.items.length > 0);
+      view.renderLibrary(state, itemIntents);
+      view.setExportEnabled(state.manga.items.length > 0);
+      view.renderMetadata(state.manga.metadata);
     }
 
     function refreshLanguage() {
@@ -63,41 +65,35 @@
       refreshLanguage();
     }
 
-    function onFolderSelected(event) {
-      const pages = readPages(event.target.files);
-      useCases.loadFolder(pages);
-      const name = D.rootFolderName(pages);
-      if (name && (!seriesTouched || !elements.seriesInput.value)) {
-        view.setSeries(name);
-        seriesTouched = false;
+    function loadFolder(files) {
+      const { seriesFilled } = useCases.loadFolder(readPages(files), { keepTypedSeries: seriesTypedByUser });
+      if (seriesFilled) seriesTypedByUser = false;
+    }
+
+    function exportSidecar() {
+      view.clearFieldErrors();
+      try {
+        useCases.exportSidecar();
+      } catch (error) {
+        showFailure(error);
       }
     }
 
-    function handleProgress({ stage, percent, current, total }) {
-      view.showProgress(percent);
-      showStatus(stage === "reading" ? "status.reading" : "status.packing", { current, total });
-    }
-
-    async function onGenerate() {
+    async function generate() {
       view.clearFieldErrors();
       view.setGenerating(true);
       view.resetProgress();
-      let result;
-      let failure;
       try {
-        result = await useCases.generate({ rawMetadata: view.readMetadataForm(), onProgress: handleProgress });
+        const result = await useCases.generate({ onProgress: showProgress });
+        view.setGenerating(false);
+        showSuccess(result);
       } catch (error) {
-        failure = error;
-      }
-      view.setGenerating(false);
-      if (failure) handleFailure(failure);
-      else {
-        const params = { n: result.pageCount, size: (result.size / BYTES_PER_MB).toFixed(1) };
-        showStatus("status.done", params, { notes: describeNotices(result.notices) });
+        view.setGenerating(false);
+        showFailure(error);
       }
     }
 
-    function onPickerToggle(page, checked) {
+    function togglePickerPage(page, checked) {
       if (checked) pickerSelection.add(page);
       else pickerSelection.delete(page);
       view.updatePickerCount(pickerSelection.size);
@@ -105,7 +101,7 @@
 
     function openPicker() {
       pickerSelection = new Set();
-      view.openPicker(store.get().items, onPickerToggle);
+      view.openPicker(store.get().manga.items, togglePickerPage);
       view.updatePickerCount(0);
     }
 
@@ -115,28 +111,24 @@
       view.closePicker();
     }
 
-    function bindEvents() {
-      elements.folderInput.addEventListener("change", onFolderSelected);
-      elements.seriesInput.addEventListener("input", () => {
-        seriesTouched = true;
-      });
-      elements.extractButton.addEventListener("click", () => useCases.extractFolderNames());
-      elements.numberButton.addEventListener("click", () => useCases.numberChapters());
-      elements.clearButton.addEventListener("click", () => useCases.clearTitles());
-      elements.sidecarButton.addEventListener("click", onExportSidecar);
-      elements.generateButton.addEventListener("click", onGenerate);
-      elements.formatButtons.forEach((button) => {
-        button.addEventListener("click", () => useCases.selectOutputFormat(button.dataset.format));
-      });
-      elements.addButton.addEventListener("click", openPicker);
-      elements.pickOk.addEventListener("click", confirmPicker);
-      elements.pickCancel.addEventListener("click", () => view.closePicker());
-      elements.picker.addEventListener("close", () => previews.releaseAll());
-      elements.languageButton.addEventListener("click", toggleLanguage);
-    }
-
     function start() {
-      bindEvents();
+      useCases.loadMetadata(view.readMetadataForm());
+      view.bindActions({
+        onFolderSelected: loadFolder,
+        onSeriesTyped: () => {
+          seriesTypedByUser = true;
+        },
+        onExtractFolderNames: () => useCases.extractFolderNames(),
+        onNumberChapters: () => useCases.numberChapters(),
+        onClearTitles: () => useCases.clearTitles(),
+        onExportSidecar: exportSidecar,
+        onGenerate: generate,
+        onSelectFormat: (formatId) => useCases.selectOutputFormat(formatId),
+        onOpenPicker: openPicker,
+        onConfirmPicker: confirmPicker,
+        onToggleLanguage: toggleLanguage,
+        onMetadataChange: (field, value) => useCases.changeMetadata(field, value, { quiet: true }),
+      });
       store.subscribe(render);
       refreshLanguage();
     }

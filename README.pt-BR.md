@@ -94,12 +94,12 @@ O Tojiru não lê nem edita um `ComicInfo.xml` existente.
 
 O código é dividido em camadas, e o teste `tests/architecture.test.js` impede dependências na direção errada.
 
-| Camada         | Pasta                | Responsabilidade                                                              |
-| -------------- | -------------------- | ----------------------------------------------------------------------------- |
-| Domínio        | `src/domain`         | Regras puras: itens, ordenação, detecção de tipos, metadados                  |
-| Aplicação      | `src/application`    | Casos de uso (carregar pasta, gerar arquivo) com portas injetadas             |
-| Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura e conversão de imagens, OPFS |
-| Apresentação   | `src/presentation`   | Interface, controlador, traduções e feedback ao usuário                       |
+| Camada         | Pasta                | Responsabilidade                                                                                                |
+| -------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Domínio        | `src/domain`         | Regras puras: erros, nomes de arquivo, esquema de metadados, detecção de tipos, lista de itens                  |
+| Aplicação      | `src/application`    | Casos de uso com portas injetadas, store de estado, política de títulos, documento de saída, tradução de falhas |
+| Infraestrutura | `src/infrastructure` | Escritores de CBZ e EPUB, ZIP em stream, leitura e conversão de imagens, OPFS, adaptadores do navegador         |
+| Apresentação   | `src/presentation`   | Componentes de view (lista, formulário de metadados, seletor), controlador, traduções e feedback                |
 
 `src/main.js` é a raiz de composição: liga as camadas e injeta os adaptadores do navegador. Os scripts são carregados na ordem do `index.html`, sem módulos ES, para que o projeto funcione ao abrir o arquivo direto.
 

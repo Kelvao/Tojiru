@@ -8,7 +8,8 @@
     <script>
       (function () {
         const SCRIPT_CHECKS = [
-          ["src/domain/library.js", "domain"],
+          ["src/domain/manga.js", "domain.createManga"],
+          ["src/domain/library.js", "domain.buildItems"],
           ["src/presentation/i18n.js", "i18n"],
           ["src/application/usecases.js", "usecases"],
           ["src/infrastructure/xml.js", "infra.xml"],
@@ -338,9 +339,14 @@
     </main>
 
     <script src="vendor/jszip.min.js"></script>
+    <script src="src/domain/errors.js"></script>
+    <script src="src/domain/files.js"></script>
+    <script src="src/domain/manga.js"></script>
     <script src="src/domain/library.js"></script>
-    <script src="src/presentation/i18n.js"></script>
-    <script src="src/presentation/feedback.js"></script>
+    <script src="src/application/failures.js"></script>
+    <script src="src/application/store.js"></script>
+    <script src="src/application/titles.js"></script>
+    <script src="src/application/output.js"></script>
     <script src="src/application/usecases.js"></script>
     <script src="src/infrastructure/xml.js"></script>
     <script src="src/infrastructure/browser.js"></script>
@@ -349,6 +355,13 @@
     <script src="src/infrastructure/zipstream.js"></script>
     <script src="src/infrastructure/cbz.js"></script>
     <script src="src/infrastructure/epub.js"></script>
+    <script src="src/presentation/i18n.js"></script>
+    <script src="src/presentation/feedback.js"></script>
+    <script src="src/presentation/dom.js"></script>
+    <script src="src/presentation/labels.js"></script>
+    <script src="src/presentation/libraryView.js"></script>
+    <script src="src/presentation/metadataFormView.js"></script>
+    <script src="src/presentation/pickerView.js"></script>
     <script src="src/presentation/view.js"></script>
     <script src="src/presentation/controller.js"></script>
     <script src="src/main.js"></script>

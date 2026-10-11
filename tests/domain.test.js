@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, loadScripts } = require("./load");
 
-const { domain: D } = loadScripts(["src/domain/library.js"]);
+const { domain: D } = loadScripts([...DOMAIN_SCRIPTS]);
 
 const page = (path) => ({ name: path.split("/").pop(), path, source: path });
 const folders = (items) => [...items.map((item) => item.folder)];
@@ -326,26 +326,9 @@ test("MetadataError carries the list of problems", () => {
   assert.equal(error.problems[0].field, "series");
 });
 
-test("toAppError classifies browser failures and keeps the original as cause", () => {
-  const named = (name, message = "") => Object.assign(new Error(message), { name });
-  const code = (error) => D.toAppError(error).code;
-  assert.equal(code(named("QuotaExceededError")), D.ErrorCode.STORAGE_FULL);
-  assert.equal(code(named("NotReadableError")), D.ErrorCode.FILE_UNREADABLE);
-  assert.equal(code(named("NotFoundError")), D.ErrorCode.FILE_UNREADABLE);
-  assert.equal(code(named("RangeError", "Array buffer allocation failed")), D.ErrorCode.OUT_OF_MEMORY);
-  assert.equal(code(named("RangeError", "Invalid time value")), D.ErrorCode.UNEXPECTED);
-  assert.equal(code(new Error("boom")), D.ErrorCode.UNEXPECTED);
-  assert.equal(code("plain string"), D.ErrorCode.UNEXPECTED);
-  const original = new Error("boom");
-  assert.equal(D.toAppError(original).cause, original);
-  assert.deepEqual({ ...D.toAppError(original).params }, { detail: "boom" });
-});
-
-test("toAppError keeps application errors untouched", () => {
-  const metadata = new D.MetadataError([{ field: "series", rule: "required" }]);
-  assert.equal(D.toAppError(metadata), metadata);
+test("ImageReadError carries the page name and the original cause", () => {
   const image = new D.ImageReadError("a.png", { cause: new Error("decode") });
-  assert.equal(D.toAppError(image), image);
+  assert.ok(image instanceof D.AppError);
   assert.equal(image.code, D.ErrorCode.IMAGE_READ);
   assert.deepEqual({ ...image.params }, { name: "a.png" });
   assert.equal(image.cause.message, "decode");

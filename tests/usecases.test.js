@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, APPLICATION_SCRIPTS, loadScripts } = require("./load");
 
-const { domain: D, usecases: U } = loadScripts(["src/domain/library.js", "src/application/usecases.js"]);
+const { domain: D, usecases: U } = loadScripts([...DOMAIN_SCRIPTS, ...APPLICATION_SCRIPTS]);
 
 const page = (path) => ({ name: path.split("/").pop(), path, source: path });
 const translator = {
@@ -34,9 +34,19 @@ function setup(activeTranslator = translator, writeOverride = null) {
     save: (blob, fileName) => saved.push({ blob, fileName }),
     saveText: (file) => saved.push(file),
   };
-  const store = U.createStore({ items: [], folderLoaded: false, outputFormat: "cbz" });
+  const store = U.createStore({ manga: D.createManga(), folderLoaded: false, outputFormat: "cbz" });
   const useCases = U.createUseCases({ store, formats, saver, translator: activeTranslator });
   return { store, useCases, saved, written };
+}
+
+function generateWith(useCases, rawMetadata) {
+  useCases.loadMetadata(rawMetadata);
+  return useCases.generate({ onProgress: () => {} });
+}
+
+function exportWith(useCases, rawMetadata) {
+  useCases.loadMetadata(rawMetadata);
+  return useCases.exportSidecar();
 }
 
 const sampleFolder = [page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 1/2.jpg"), page("M/Cap 2/1.jpg")];
@@ -44,7 +54,7 @@ const sampleFolder = [page("M/capa.jpg"), page("M/Cap 1/1.jpg"), page("M/Cap 1/2
 test("loadFolder builds items and marks the folder as loaded", () => {
   const { store, useCases } = setup();
   useCases.loadFolder(sampleFolder);
-  assert.equal(store.get().items.length, 3);
+  assert.equal(store.get().manga.items.length, 3);
   assert.equal(store.get().folderLoaded, true);
 });
 
@@ -57,7 +67,7 @@ test("store notifies subscribers except for quiet updates", () => {
   assert.equal(notifications, 1);
   useCases.renameItem(1, "Novo");
   assert.equal(notifications, 1);
-  assert.equal(store.get().items[1].title, "Novo");
+  assert.equal(store.get().manga.items[1].title, "Novo");
 });
 
 test("numberChapters uses the translated chapter name and skips extras", () => {
@@ -65,7 +75,7 @@ test("numberChapters uses the translated chapter name and skips extras", () => {
   useCases.loadFolder(sampleFolder);
   useCases.numberChapters();
   assert.deepEqual(
-    [...store.get().items.map((item) => item.title)],
+    [...store.get().manga.items.map((item) => item.title)],
     ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
   );
 });
@@ -73,16 +83,16 @@ test("numberChapters uses the translated chapter name and skips extras", () => {
 test("manual items can be created and undone", () => {
   const { store, useCases } = setup();
   useCases.loadFolder(sampleFolder);
-  const pages = D.pagesOf(store.get().items);
+  const pages = D.pagesOf(store.get().manga.items);
   useCases.createManualItem({ pages: [pages[1]], kind: D.Kind.CONTENTS, title: "  Sumário " });
-  const manual = store.get().items.find((item) => item.manual);
+  const manual = store.get().manga.items.find((item) => item.manual);
   assert.equal(manual.title, "Sumário");
-  useCases.undoManualItem(store.get().items.indexOf(manual));
+  useCases.undoManualItem(store.get().manga.items.indexOf(manual));
   assert.equal(
-    store.get().items.some((item) => item.manual),
+    store.get().manga.items.some((item) => item.manual),
     false,
   );
-  assert.equal(D.countPages(store.get().items), 4);
+  assert.equal(D.countPages(store.get().manga.items), 4);
 });
 
 test("selectOutputFormat ignores unknown formats", () => {
@@ -98,10 +108,8 @@ test("generate hands a self-contained output document to the selected format and
   useCases.loadFolder(sampleFolder);
   useCases.renameItem(1, "Início");
   const progress = [];
-  const result = await useCases.generate({
-    rawMetadata: { series: "Meu: Mangá", genres: "A, B", language: "" },
-    onProgress: (event) => progress.push(event),
-  });
+  useCases.loadMetadata({ series: "Meu: Mangá", genres: "A, B", language: "" });
+  const result = await useCases.generate({ onProgress: (event) => progress.push(event) });
   const output = written[0];
   assert.deepEqual(
     [...output.entries.map((entry) => entry.title)],
@@ -115,16 +123,16 @@ test("generate hands a self-contained output document to the selected format and
   assert.equal(result.fileName, "Meu_ Mangá.cbz");
   assert.equal(saved[0].fileName, "Meu_ Mangá.cbz");
   assert.equal(progress.length, 1);
-  assert.equal(store.get().items.length, 3);
+  assert.equal(store.get().manga.items.length, 3);
 });
 
 test("exportSidecar saves the format sidecar and does nothing without one", () => {
   const { useCases, saved } = setup();
   useCases.loadFolder(sampleFolder);
-  useCases.exportSidecar({ series: "X" });
+  exportWith(useCases, { series: "X" });
   assert.deepEqual({ ...saved[0] }, { content: "xml:3", mediaType: "application/xml", fileName: "ComicInfo.xml" });
   useCases.selectOutputFormat("epub");
-  useCases.exportSidecar({ series: "X" });
+  exportWith(useCases, { series: "X" });
   assert.equal(saved.length, 1);
 });
 
@@ -138,7 +146,7 @@ test("generate refuses to run without the required fields and touches neither wr
   const { useCases, saved, written } = setup();
   useCases.loadFolder(sampleFolder);
   await assert.rejects(
-    () => useCases.generate({ rawMetadata: { series: "   " }, onProgress: () => {} }),
+    () => generateWith(useCases, { series: "   " }),
     (error) => error instanceof D.MetadataError && error.problems[0].field === "series",
   );
   assert.equal(written.length, 0);
@@ -149,7 +157,7 @@ test("exportSidecar also requires the title", () => {
   const { useCases, saved } = setup();
   useCases.loadFolder(sampleFolder);
   assert.throws(
-    () => useCases.exportSidecar({ series: "" }),
+    () => exportWith(useCases, { series: "" }),
     (error) => error instanceof D.MetadataError,
   );
   assert.equal(saved.length, 0);
@@ -159,7 +167,7 @@ test("loadFolder fills chapters with the numbered pattern and detected extras wi
   const { store, useCases } = setup();
   useCases.loadFolder(sampleFolder);
   assert.deepEqual(
-    store.get().items.map((item) => item.title),
+    store.get().manga.items.map((item) => item.title),
     ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
   );
 });
@@ -169,12 +177,12 @@ test("extractFolderNames fills chapters with folder names and numberChapters res
   useCases.loadFolder(sampleFolder);
   useCases.extractFolderNames();
   assert.deepEqual(
-    store.get().items.map((item) => item.title),
+    store.get().manga.items.map((item) => item.title),
     ["kind.cover.name", "Cap 1", "Cap 2"],
   );
   useCases.numberChapters();
   assert.deepEqual(
-    store.get().items.map((item) => item.title),
+    store.get().manga.items.map((item) => item.title),
     ["kind.cover.name", "kind.chapter.name 1", "kind.chapter.name 2"],
   );
 });
@@ -184,7 +192,7 @@ test("root pages have no folder name and stay numbered when extracting", () => {
   useCases.loadFolder([page("M/1.jpg"), page("M/Cap 1/1.jpg")]);
   useCases.extractFolderNames();
   assert.deepEqual(
-    store.get().items.map((item) => item.title),
+    store.get().manga.items.map((item) => item.title),
     ["kind.chapter.name 1", "Cap 1"],
   );
 });
@@ -192,7 +200,7 @@ test("root pages have no folder name and stay numbered when extracting", () => {
 test("detected extras keep their kind name through extracting and numbering", () => {
   const { store, useCases } = setup();
   useCases.loadFolder([page("M/capa.jpg"), page("M/Extra/1.jpg"), page("M/Cap 1/1.jpg"), page("M/Contracapa.jpg")]);
-  const titles = () => store.get().items.map((item) => item.title);
+  const titles = () => store.get().manga.items.map((item) => item.title);
   const numbered = ["kind.cover.name", "kind.chapter.name 1", "kind.extra.name", "kind.back.name"];
   assert.deepEqual(titles(), numbered);
   useCases.extractFolderNames();
@@ -205,14 +213,14 @@ test("generate uses the filled titles", async () => {
   const { useCases, written } = setup();
   useCases.loadFolder(sampleFolder);
   useCases.extractFolderNames();
-  await useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} });
+  await generateWith(useCases, { series: "M" });
   assert.deepEqual(
     written[0].entries.map((entry) => entry.title),
     ["kind.cover.name", "Cap 1", "Cap 2"],
   );
 });
 
-const titles = (store) => store.get().items.map((item) => item.title);
+const titles = (store) => store.get().manga.items.map((item) => item.title);
 
 test("changing an item's type regenerates its automatic title and renumbers the chapters", () => {
   const { store, useCases } = setup();
@@ -272,11 +280,11 @@ test("refreshTitles rewrites automatic titles in the new interface language and 
 test("a manual item created without a name gets its type name and follows type changes", () => {
   const { store, useCases } = setup();
   useCases.loadFolder(sampleFolder);
-  const pages = store.get().items[1].pages;
+  const pages = store.get().manga.items[1].pages;
   useCases.createManualItem({ pages: [pages[0]], kind: "extra", title: "" });
-  const extra = () => store.get().items.find((item) => item.manual);
+  const extra = () => store.get().manga.items.find((item) => item.manual);
   assert.equal(extra().title, "kind.extra.name");
-  useCases.changeItemKind(store.get().items.indexOf(extra()), "toc");
+  useCases.changeItemKind(store.get().manga.items.indexOf(extra()), "toc");
   assert.equal(extra().title, "kind.toc.name");
 });
 
@@ -287,7 +295,7 @@ test("generate wraps unknown writer failures in an AppError and keeps the origin
   });
   useCases.loadFolder(sampleFolder);
   await assert.rejects(
-    useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} }),
+    generateWith(useCases, { series: "M" }),
     (error) => error.code === D.ErrorCode.STORAGE_FULL && error.cause === original,
   );
 });
@@ -298,10 +306,7 @@ test("generate lets application errors through unchanged", async () => {
     throw failure;
   });
   useCases.loadFolder(sampleFolder);
-  await assert.rejects(
-    useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} }),
-    (error) => error === failure,
-  );
+  await assert.rejects(generateWith(useCases, { series: "M" }), (error) => error === failure);
 });
 
 test("generate returns the notices reported by the writer", async () => {
@@ -310,14 +315,80 @@ test("generate returns the notices reported by the writer", async () => {
     return { blob: { size: 1 }, pageCount: output.pages.length };
   });
   useCases.loadFolder(sampleFolder);
-  const result = await useCases.generate({ rawMetadata: { series: "M" }, onProgress: () => {} });
+  const result = await generateWith(useCases, { series: "M" });
   assert.deepEqual(result.notices, [{ code: "diskFallback" }]);
 });
 
 test("exportSidecar wraps failures too", () => {
   const { useCases } = setup();
   assert.throws(
-    () => useCases.exportSidecar({ series: "" }),
+    () => exportWith(useCases, { series: "" }),
     (error) => error instanceof D.MetadataError && error.code === D.ErrorCode.INVALID_METADATA,
   );
+});
+
+test("loadMetadata keeps only known fields and fills the defaults", () => {
+  const { store, useCases } = setup();
+  useCases.loadMetadata({ series: "X", unknown: "ignored" });
+  assert.deepEqual({ ...store.get().manga.metadata }, { ...D.createMetadata({ series: "X" }) });
+  assert.equal(store.get().manga.metadata.readingMode, D.ReadingMode.RIGHT_TO_LEFT);
+  assert.equal("unknown" in store.get().manga.metadata, false);
+});
+
+test("changeMetadata updates one field, ignores unknown ones and can stay quiet", () => {
+  const { store, useCases } = setup();
+  let notifications = 0;
+  store.subscribe(() => notifications++);
+  useCases.changeMetadata("series", "Berserk");
+  assert.equal(store.get().manga.metadata.series, "Berserk");
+  assert.equal(notifications, 1);
+  useCases.changeMetadata("writer", "Miura", { quiet: true });
+  assert.equal(store.get().manga.metadata.writer, "Miura");
+  assert.equal(notifications, 1);
+  useCases.changeMetadata("unknown", "x");
+  assert.equal("unknown" in store.get().manga.metadata, false);
+});
+
+test("the manga keeps its metadata while the items change", () => {
+  const { store, useCases } = setup();
+  useCases.changeMetadata("series", "Berserk");
+  useCases.loadFolder(sampleFolder, { keepTypedSeries: true });
+  useCases.moveItem(1, 1);
+  assert.equal(store.get().manga.metadata.series, "Berserk");
+  assert.equal(store.get().manga.items.length, 3);
+});
+
+test("loadFolder fills the series with the root folder name", () => {
+  const { store, useCases } = setup();
+  useCases.changeMetadata("series", "Old");
+  const { seriesFilled } = useCases.loadFolder(sampleFolder);
+  assert.equal(seriesFilled, true);
+  assert.equal(store.get().manga.metadata.series, "M");
+});
+
+test("loadFolder keeps a series typed by the user but fills an empty one", () => {
+  const { store, useCases } = setup();
+  useCases.changeMetadata("series", "Berserk");
+  assert.equal(useCases.loadFolder(sampleFolder, { keepTypedSeries: true }).seriesFilled, false);
+  assert.equal(store.get().manga.metadata.series, "Berserk");
+  useCases.changeMetadata("series", "");
+  assert.equal(useCases.loadFolder(sampleFolder, { keepTypedSeries: true }).seriesFilled, true);
+  assert.equal(store.get().manga.metadata.series, "M");
+});
+
+test("loadFolder leaves the series alone when the folder has no images", () => {
+  const { store, useCases } = setup();
+  useCases.changeMetadata("series", "Berserk");
+  assert.equal(useCases.loadFolder([]).seriesFilled, false);
+  assert.equal(store.get().manga.metadata.series, "Berserk");
+});
+
+test("generate reads the metadata from the manga in the store", async () => {
+  const { useCases, written } = setup();
+  useCases.loadFolder(sampleFolder);
+  useCases.changeMetadata("series", "Berserk");
+  useCases.changeMetadata("genres", "A,  B ");
+  await useCases.generate({ onProgress: () => {} });
+  assert.equal(written[0].metadata.series, "Berserk");
+  assert.deepEqual([...written[0].metadata.genreList], ["A", "B"]);
 });

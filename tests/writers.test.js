@@ -1,12 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const JSZip = require("jszip");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, APPLICATION_SCRIPTS, loadScripts } = require("./load");
 
 const Tojiru = loadScripts(
   [
-    "src/domain/library.js",
-    "src/application/usecases.js",
+    ...DOMAIN_SCRIPTS,
+    ...APPLICATION_SCRIPTS,
     "src/infrastructure/xml.js",
     "src/infrastructure/zipstream.js",
     "src/infrastructure/cbz.js",

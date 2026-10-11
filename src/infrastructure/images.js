@@ -1,5 +1,5 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
+  const { extensionOf, ImageReadError } = Tojiru.domain;
   const { readImageSize } = Tojiru.infra.imagesize;
   const CONVERTED_IMAGE = { extension: "png", mediaType: "image/png" };
   const NATIVE_MEDIA_TYPES = {
@@ -76,7 +76,7 @@
     }
 
     async function prepare(page) {
-      const extension = D.extensionOf(page.name);
+      const extension = extensionOf(page.name);
       try {
         if (!Object.hasOwn(NATIVE_MEDIA_TYPES, extension)) return await convertToPng(page.source);
         return {
@@ -86,7 +86,7 @@
           ...(await measure(page.source)),
         };
       } catch (error) {
-        throw new D.ImageReadError(page.name, { cause: error });
+        throw new ImageReadError(page.name, { cause: error });
       }
     }
 

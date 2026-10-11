@@ -1,9 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const JSZip = require("jszip");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, loadScripts } = require("./load");
 
-const { createZipWriter, ZipLimitError } = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], {
+const { createZipWriter, ZipLimitError } = loadScripts([...DOMAIN_SCRIPTS, "src/infrastructure/zipstream.js"], {
   TextEncoder,
 }).infra.zipstream;
 
@@ -71,8 +71,8 @@ test("zip writer rejects more entries than the classic ZIP format allows", async
 });
 
 test("writeArchive reports a notice when it falls back to memory", async () => {
-  const { writeArchive } = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], { TextEncoder })
-    .infra.zipstream;
+  const { writeArchive } = loadScripts([...DOMAIN_SCRIPTS, "src/infrastructure/zipstream.js"], { TextEncoder }).infra
+    .zipstream;
   const notices = [];
   const result = await writeArchive({
     entries: [],
@@ -89,7 +89,9 @@ test("writeArchive reports a notice when it falls back to memory", async () => {
 });
 
 test("writeArchive does not hide application errors behind the memory fallback", async () => {
-  const lib = loadScripts(["src/domain/library.js", "src/infrastructure/zipstream.js"], { TextEncoder });
+  const lib = loadScripts([...DOMAIN_SCRIPTS, "src/infrastructure/zipstream.js"], {
+    TextEncoder,
+  });
   const failure = new lib.domain.ImageReadError("a.png");
   await assert.rejects(
     lib.infra.zipstream.writeArchive({

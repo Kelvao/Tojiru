@@ -1,4 +1,5 @@
 (function (Tojiru) {
+  const { createManga } = Tojiru.domain;
   const { createStore, createUseCases } = Tojiru.usecases;
   const { DEFAULT_LANGUAGE, LANGUAGES, TRANSLATIONS, detectLanguage, createTranslator } = Tojiru.i18n;
   const {
@@ -42,7 +43,7 @@
     epub: createEpubFormat({ getJsZip: requireJsZip, imageDecoder, generateUuid, createSink: opfs.createSink }),
   };
 
-  const store = createStore({ items: [], folderLoaded: false, outputFormat: DEFAULT_OUTPUT_FORMAT });
+  const store = createStore({ manga: createManga(), folderLoaded: false, outputFormat: DEFAULT_OUTPUT_FORMAT });
   const useCases = createUseCases({ store, formats, saver: createBlobSaver(document), translator });
   const previews = createPreviewUrls();
   const view = createView({ documentRef: document, translator, previews });
@@ -55,7 +56,6 @@
     translator,
     languageStore,
     readPages: pagesFromFileList,
-    previews,
   }).start();
 
   Tojiru.started = true;

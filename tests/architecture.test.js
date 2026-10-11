@@ -60,6 +60,30 @@ test("only the composition root wires infrastructure into the application", () =
   assert.match(readSource("src/main.js"), /window\.JSZip/);
 });
 
+test("source files import named dependencies instead of whole-layer aliases", () => {
+  for (const { folder } of layers) {
+    for (const file of sourceFilesIn(folder)) {
+      const source = readSource(`src/${folder}/${file}`);
+      assert.doesNotMatch(source, /const \w+ = Tojiru\.\w+;/, `src/${folder}/${file} aliases a whole layer`);
+    }
+  }
+});
+
+test("the controller talks to the view only through its API, never through DOM elements", () => {
+  const source = readSource("src/presentation/controller.js");
+  assert.doesNotMatch(source, /\belements\b|addEventListener|querySelector|getElementById/);
+});
+
+test("index.html loads the layers from the inside out", () => {
+  const scripts = [...readSource("index.html").matchAll(/<script src="src\/(\w+)\//g)].map((match) => match[1]);
+  const order = ["domain", "application", "infrastructure", "presentation"];
+  const ranks = scripts.map((folder) => order.indexOf(folder));
+  assert.deepEqual(
+    ranks,
+    [...ranks].sort((a, b) => a - b),
+  );
+});
+
 test("source files contain no comments", () => {
   const files = [
     ...layers.flatMap(({ folder }) => sourceFilesIn(folder).map((file) => `src/${folder}/${file}`)),

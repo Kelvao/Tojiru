@@ -1,26 +1,27 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
+  const { Kind, extensionOf } = Tojiru.domain;
   const { escapeXml } = Tojiru.infra.xml;
-  const { writeArchive } = Tojiru.infra.zipstream;
+  const { writeArchive, writeWithJsZip } = Tojiru.infra.zipstream;
   const COMIC_INFO_FILE = "ComicInfo.xml";
   const MIN_PAGE_NUMBER_WIDTH = 4;
   const FRONT_COVER_TYPE = "FrontCover";
   const STORE_ONLY = { compression: "STORE" };
+  const CBZ_MEMORY_OPTIONS = { compression: "STORE", streamFiles: true };
   const XML_HEADER =
     '<?xml version="1.0" encoding="utf-8"?>\n<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n';
 
   const PAGE_TYPES = {
-    [D.Kind.COVER]: FRONT_COVER_TYPE,
-    [D.Kind.BAND]: "Other",
-    [D.Kind.FRONT_FLAP]: "Other",
-    [D.Kind.ENDPAPER]: "InnerCover",
-    [D.Kind.FLYLEAF]: "Other",
-    [D.Kind.TITLE_PAGE]: "Other",
-    [D.Kind.CONTENTS]: "Other",
-    [D.Kind.EXTRA]: "Other",
-    [D.Kind.BACK_FLAP]: "Other",
-    [D.Kind.BACK_COVER]: "BackCover",
-    [D.Kind.SPINE]: "Other",
+    [Kind.COVER]: FRONT_COVER_TYPE,
+    [Kind.BAND]: "Other",
+    [Kind.FRONT_FLAP]: "Other",
+    [Kind.ENDPAPER]: "InnerCover",
+    [Kind.FLYLEAF]: "Other",
+    [Kind.TITLE_PAGE]: "Other",
+    [Kind.CONTENTS]: "Other",
+    [Kind.EXTRA]: "Other",
+    [Kind.BACK_FLAP]: "Other",
+    [Kind.BACK_COVER]: "BackCover",
+    [Kind.SPINE]: "Other",
   };
 
   function xmlTag(name, value) {
@@ -56,7 +57,7 @@
   }
 
   function pageFileName(index, width, page) {
-    return `${String(index).padStart(width, "0")}.${D.extensionOf(page.name)}`;
+    return `${String(index).padStart(width, "0")}.${extensionOf(page.name)}`;
   }
 
   const pageNumberWidth = (output) => Math.max(MIN_PAGE_NUMBER_WIDTH, String(output.pages.length).length);
@@ -74,15 +75,6 @@
   }
 
   function createCbzFormat({ getJsZip, createSink = null }) {
-    async function writeToMemory(entries, report) {
-      const zip = new (getJsZip())();
-      entries.forEach((entry) => zip.file(entry.path, entry.source, entry.options));
-      report(0);
-      return zip.generateAsync({ type: "blob", compression: "STORE", streamFiles: true }, (meta) =>
-        report(meta.percent),
-      );
-    }
-
     async function write(output, onProgress, { fileName = "output.cbz", onNotice = () => {} } = {}) {
       const entries = buildEntries(output);
       const report = (percent) => onProgress({ stage: "packing", percent });
@@ -92,7 +84,8 @@
         fileName,
         onProgress: report,
         onNotice,
-        writeToMemory: () => writeToMemory(entries, report),
+        writeToMemory: () =>
+          writeWithJsZip({ JsZip: getJsZip(), entries, generateOptions: CBZ_MEMORY_OPTIONS, onProgress: report }),
       });
       return { blob, pageCount: output.pages.length };
     }
@@ -107,5 +100,5 @@
   }
 
   Tojiru.infra = Tojiru.infra || {};
-  Tojiru.infra.cbz = { createCbzFormat, buildComicInfoXml };
+  Tojiru.infra.cbz = { createCbzFormat, buildComicInfoXml, PAGE_TYPES };
 })((window.Tojiru = window.Tojiru || {}));

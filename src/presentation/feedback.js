@@ -1,15 +1,16 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
+  const { ErrorCode } = Tojiru.domain;
+  const { toAppError } = Tojiru.usecases;
 
-  const knownCodes = new Set(Object.values(D.ErrorCode));
+  const knownCodes = new Set(Object.values(ErrorCode));
 
   function describeFailure(error) {
-    const appError = D.toAppError(error);
-    const code = knownCodes.has(appError.code) ? appError.code : D.ErrorCode.UNEXPECTED;
+    const appError = toAppError(error);
+    const code = knownCodes.has(appError.code) ? appError.code : ErrorCode.UNEXPECTED;
     return {
       key: `error.${code}`,
       params: appError.params,
-      expected: code !== D.ErrorCode.UNEXPECTED,
+      expected: code !== ErrorCode.UNEXPECTED,
       cause: appError.cause ?? appError,
     };
   }

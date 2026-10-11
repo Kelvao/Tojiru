@@ -1,12 +1,12 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
+  const { isImageName } = Tojiru.domain;
   const SAVE_CLEANUP_DELAY_MS = 10000;
   const OPFS_DIRECTORY = "tojiru-tmp";
   const OPFS_QUOTA_MARGIN = 1.05;
 
   function pagesFromFileList(fileList) {
     return Array.from(fileList)
-      .filter((file) => D.isImageName(file.name))
+      .filter((file) => isImageName(file.name))
       .map((file) => ({ name: file.name, path: file.webkitRelativePath, source: file }));
   }
 

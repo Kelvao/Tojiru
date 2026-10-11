@@ -1,12 +1,17 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, loadScripts } = require("./load");
 
 const {
   domain: D,
   ui,
   i18n,
-} = loadScripts(["src/domain/library.js", "src/presentation/i18n.js", "src/presentation/feedback.js"]);
+} = loadScripts([
+  ...DOMAIN_SCRIPTS,
+  "src/presentation/i18n.js",
+  "src/application/failures.js",
+  "src/presentation/feedback.js",
+]);
 const { describeFailure, describeNotices } = ui.feedback;
 const translators = Object.keys(i18n.LANGUAGES).map((language) => ({
   language,

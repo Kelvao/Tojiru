@@ -2,7 +2,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const assert = require("node:assert");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, loadScripts } = require("./load");
 
 test("image decoder closes the bitmap when PNG conversion fails", async () => {
   let closeCount = 0;
@@ -12,7 +12,7 @@ test("image decoder closes the bitmap when PNG conversion fails", async () => {
     close: () => closeCount++,
   };
   const { infra } = loadScripts(
-    ["src/domain/library.js", "src/infrastructure/imagesize.js", "src/infrastructure/images.js"],
+    [...DOMAIN_SCRIPTS, "src/infrastructure/imagesize.js", "src/infrastructure/images.js"],
     {
       createImageBitmap: async () => bitmap,
     },
@@ -41,7 +41,7 @@ const fileOf = (bytes) => ({
 
 function decoderWith({ bitmap, decodeCalls }) {
   const { infra } = loadScripts(
-    ["src/domain/library.js", "src/infrastructure/imagesize.js", "src/infrastructure/images.js"],
+    [...DOMAIN_SCRIPTS, "src/infrastructure/imagesize.js", "src/infrastructure/images.js"],
     {
       createImageBitmap: async () => {
         decodeCalls.count++;

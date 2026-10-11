@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { loadScripts } = require("./load");
+const { DOMAIN_SCRIPTS, loadScripts } = require("./load");
 
-const { createOpfsStorage } = loadScripts(["src/domain/library.js", "src/infrastructure/browser.js"]).infra.browser;
+const { createOpfsStorage } = loadScripts([...DOMAIN_SCRIPTS, "src/infrastructure/browser.js"]).infra.browser;
 
 function fakeOpfs({ quota = 1e12, usage = 0, writable = true } = {}) {
   const state = { directories: new Map(), removed: [], writes: [], closed: 0, aborted: 0 };

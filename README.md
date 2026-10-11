@@ -94,12 +94,12 @@ Tojiru does not read or edit an existing `ComicInfo.xml`.
 
 The code is split into layers, and the `tests/architecture.test.js` test prevents dependencies from pointing the wrong way.
 
-| Layer          | Folder               | Responsibility                                                          |
-| -------------- | -------------------- | ----------------------------------------------------------------------- |
-| Domain         | `src/domain`         | Pure rules: items, sorting, type detection, metadata                    |
-| Application    | `src/application`    | Use cases (load folder, generate file) with injected ports              |
-| Infrastructure | `src/infrastructure` | CBZ and EPUB writers, streaming ZIP, image reading and conversion, OPFS |
-| Presentation   | `src/presentation`   | Interface, controller, translations and user feedback                   |
+| Layer          | Folder               | Responsibility                                                                                    |
+| -------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| Domain         | `src/domain`         | Pure rules: errors, file naming, metadata schema, type detection, item list (sorting, extraction) |
+| Application    | `src/application`    | Use cases with injected ports, state store, title policy, output document, failure translation    |
+| Infrastructure | `src/infrastructure` | CBZ and EPUB writers, streaming ZIP, image reading and conversion, OPFS, browser adapters         |
+| Presentation   | `src/presentation`   | View components (library, metadata form, picker), controller, translations and user feedback      |
 
 `src/main.js` is the composition root: it wires the layers together and injects the browser adapters. Scripts are loaded in the order of `index.html`, without ES modules, so the project works when the file is opened directly.
 

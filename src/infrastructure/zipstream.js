@@ -1,5 +1,5 @@
 (function (Tojiru) {
-  const D = Tojiru.domain;
+  const { AppError, ErrorCode, NoticeCode } = Tojiru.domain;
   const LOCAL_SIGNATURE = 0x04034b50;
   const DESCRIPTOR_SIGNATURE = 0x08074b50;
   const CENTRAL_SIGNATURE = 0x02014b50;
@@ -17,7 +17,7 @@
   const FLUSH_THRESHOLD = 1024 * 1024;
   const DOS_EPOCH_YEAR = 1980;
 
-  class ZipLimitError extends D.AppError {
+  class ZipLimitError extends AppError {
     constructor(code) {
       super(code, {}, { message: `ZIP limit exceeded: ${code}` });
       this.name = "ZipLimitError";
@@ -144,7 +144,7 @@
 
     async function emit(bytes) {
       position += bytes.length;
-      if (position > MAX_UINT32) throw new ZipLimitError(D.ErrorCode.ZIP_TOO_LARGE);
+      if (position > MAX_UINT32) throw new ZipLimitError(ErrorCode.ZIP_TOO_LARGE);
       pending.push(bytes);
       pendingLength += bytes.length;
       if (pendingLength >= FLUSH_THRESHOLD) await flush();
@@ -175,7 +175,7 @@
     }
 
     async function addEntry(name, source) {
-      if (entries.length >= MAX_ENTRIES) throw new ZipLimitError(D.ErrorCode.ZIP_TOO_MANY_PAGES);
+      if (entries.length >= MAX_ENTRIES) throw new ZipLimitError(ErrorCode.ZIP_TOO_MANY_PAGES);
       const nameBytes = encoder.encode(name);
       const stamp = dosDateTime(clock());
       const written = isStreamable(source)
@@ -219,12 +219,19 @@
       return await sink.close();
     } catch (error) {
       await sink?.abort();
-      if (error instanceof D.AppError) throw error;
-      onNotice({ code: D.NoticeCode.DISK_FALLBACK });
+      if (error instanceof AppError) throw error;
+      onNotice({ code: NoticeCode.DISK_FALLBACK });
       return writeToMemory();
     }
   }
 
+  async function writeWithJsZip({ JsZip, entries, generateOptions, onProgress }) {
+    const zip = new JsZip();
+    entries.forEach((entry) => zip.file(entry.path, entry.source, entry.options));
+    onProgress(0);
+    return zip.generateAsync({ type: "blob", ...generateOptions }, (meta) => onProgress(meta.percent));
+  }
+
   Tojiru.infra = Tojiru.infra || {};
-  Tojiru.infra.zipstream = { createZipWriter, writeArchive, ZipLimitError };
+  Tojiru.infra.zipstream = { createZipWriter, writeArchive, writeWithJsZip, ZipLimitError };
 })((window.Tojiru = window.Tojiru || {}));

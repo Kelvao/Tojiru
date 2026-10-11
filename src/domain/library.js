@@ -1,189 +1,11 @@
 (function (Tojiru) {
-  const IMAGE_EXTENSION = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
-  const FILE_NAME_FORBIDDEN_CHARS = /[\\/:*?"<>|]+/g;
-  const DEFAULT_OUTPUT_NAME = "manga";
-  const UNDETERMINED_LANGUAGE = "und";
-  const ISO_639_1_CODES = `
-    aa ab ae af ak am an ar as av ay az ba be bg bi bm bn bo br bs ca ce ch co cr cs cu cv cy da de dv
-    dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu hy hz ia id ie
-    ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln lo lt lu lv
-    mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl ps pt qu rm
-    rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti tk tl tn to tr ts
-    tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu
-  `
-    .trim()
-    .split(/\s+/);
+  const { Kind, TitleSource, detectKind, createItem, kindOrderOf } = Tojiru.domain;
   const LOOSE_FOLDER = null;
-
-  const Kind = Object.freeze({
-    CHAPTER: "chapter",
-    COVER: "cover",
-    BAND: "band",
-    FRONT_FLAP: "frontFlap",
-    ENDPAPER: "endpaper",
-    FLYLEAF: "flyleaf",
-    TITLE_PAGE: "titlePage",
-    CONTENTS: "toc",
-    EXTRA: "extra",
-    BACK_FLAP: "backFlap",
-    BACK_COVER: "back",
-    SPINE: "spine",
-  });
-
-  const TitleSource = Object.freeze({ DEFAULT: "default", FOLDER: "folder", USER: "user" });
-
-  const ReadingMode = Object.freeze({
-    RIGHT_TO_LEFT: "YesAndRightToLeft",
-    LEFT_TO_RIGHT: "Yes",
-    NONE: "No",
-  });
-
-  const ALL_KINDS = [
-    Kind.CHAPTER,
-    Kind.COVER,
-    Kind.BAND,
-    Kind.FRONT_FLAP,
-    Kind.ENDPAPER,
-    Kind.FLYLEAF,
-    Kind.TITLE_PAGE,
-    Kind.CONTENTS,
-    Kind.EXTRA,
-    Kind.BACK_FLAP,
-    Kind.BACK_COVER,
-    Kind.SPINE,
-  ];
-  const MANUAL_KINDS = [
-    Kind.CONTENTS,
-    Kind.COVER,
-    Kind.BAND,
-    Kind.FRONT_FLAP,
-    Kind.ENDPAPER,
-    Kind.FLYLEAF,
-    Kind.TITLE_PAGE,
-    Kind.EXTRA,
-    Kind.BACK_FLAP,
-    Kind.BACK_COVER,
-    Kind.SPINE,
-  ];
-
-  const startsWithWord = (...words) => new RegExp(`^(?:${words.join("|")})(?![a-z])`);
-
-  const KIND_RULES = {
-    [Kind.CHAPTER]: { sortOrder: 7, namePattern: null },
-    [Kind.FRONT_FLAP]: {
-      sortOrder: 2,
-      namePattern: startsWithWord(
-        "primeiras? orelhas?",
-        "1[\u00aaa\u00b0o]? ?orelhas?",
-        "orelha ?1(?!\\d)",
-        "orelha ?frontal",
-        "front ?flaps?",
-      ),
-    },
-    [Kind.BACK_FLAP]: {
-      sortOrder: 9,
-      namePattern: startsWithWord(
-        "segundas? orelhas?",
-        "2[\u00aaa\u00b0o]? ?orelhas?",
-        "orelha ?2(?!\\d)",
-        "orelha ?traseira",
-        "back ?flaps?",
-        "rear ?flaps?",
-      ),
-    },
-    [Kind.FLYLEAF]: { sortOrder: 4, namePattern: startsWithWord("folhas? de guardas?", "fly ?leaf", "fly ?leaves") },
-    [Kind.ENDPAPER]: { sortOrder: 3, namePattern: startsWithWord("guardas?", "end ?papers?") },
-    [Kind.TITLE_PAGE]: {
-      sortOrder: 5,
-      namePattern: startsWithWord("folhas? de rostos?", "paginas? de titulos?", "title ?pages?"),
-    },
-    [Kind.SPINE]: { sortOrder: 11, namePattern: startsWithWord("lombadas?", "spines?") },
-    [Kind.BAND]: { sortOrder: 1, namePattern: startsWithWord("cintas?", "obi", "belly ?bands?") },
-    [Kind.COVER]: { sortOrder: 0, namePattern: startsWithWord("capas?", "covers?", "front(?:cover)?") },
-    [Kind.CONTENTS]: {
-      sortOrder: 6,
-      namePattern: startsWithWord("indices?", "index(?:es)?", "sumarios?", "toc", "contents"),
-    },
-    [Kind.EXTRA]: {
-      sortOrder: 8,
-      namePattern: startsWithWord(
-        "extras?",
-        "bonus",
-        "omakes?",
-        "especiais",
-        "especial",
-        "specials?",
-        "posfacios?",
-        "prefacios?",
-      ),
-    },
-    [Kind.BACK_COVER]: {
-      sortOrder: 10,
-      namePattern: startsWithWord("contra ?capas?", "back(?:cover)?", "rear(?:cover)?"),
-    },
-  };
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-  const REQUIRED_FIELDS = Object.freeze(["series"]);
-
-  const ErrorCode = Object.freeze({
-    INVALID_METADATA: "invalidMetadata",
-    IMAGE_READ: "imageRead",
-    ZIP_TOO_LARGE: "zipTooLarge",
-    ZIP_TOO_MANY_PAGES: "zipTooManyPages",
-    STORAGE_FULL: "storageFull",
-    OUT_OF_MEMORY: "outOfMemory",
-    FILE_UNREADABLE: "fileUnreadable",
-    UNEXPECTED: "unexpected",
-  });
-
-  const NoticeCode = Object.freeze({ DISK_FALLBACK: "diskFallback" });
-
-  const ALLOCATION_FAILURE = /allocation|array length|string length|out of memory/i;
-
-  class AppError extends Error {
-    constructor(code, params = {}, { cause, message } = {}) {
-      super(message ?? code, { cause });
-      this.name = "AppError";
-      this.code = code;
-      this.params = params;
-    }
-  }
-
-  class MetadataError extends AppError {
-    constructor(problems) {
-      super(ErrorCode.INVALID_METADATA, {}, { message: "Invalid metadata" });
-      this.name = "MetadataError";
-      this.problems = problems;
-    }
-  }
-
-  class ImageReadError extends AppError {
-    constructor(pageName, options = {}) {
-      super(ErrorCode.IMAGE_READ, { name: pageName }, { ...options, message: `Could not read image ${pageName}` });
-      this.name = "ImageReadError";
-      this.pageName = pageName;
-    }
-  }
-
-  function toAppError(error) {
-    if (error instanceof AppError) return error;
-    const options = { cause: error };
-    if (error?.name === "QuotaExceededError") return new AppError(ErrorCode.STORAGE_FULL, {}, options);
-    if (error?.name === "NotReadableError" || error?.name === "NotFoundError") {
-      return new AppError(ErrorCode.FILE_UNREADABLE, {}, options);
-    }
-    if (error?.name === "RangeError" && ALLOCATION_FAILURE.test(error.message)) {
-      return new AppError(ErrorCode.OUT_OF_MEMORY, {}, options);
-    }
-    return new AppError(ErrorCode.UNEXPECTED, { detail: String(error?.message ?? error) }, options);
-  }
-
-  const isImageName = (name) => IMAGE_EXTENSION.test(name);
-  const extensionOf = (name) => name.slice(name.lastIndexOf(".") + 1).toLowerCase();
   const isChapter = (item) => item.kind === Kind.CHAPTER;
-  const sortOrderOf = (item) => KIND_RULES[item.kind].sortOrder;
+  const sortOrderOf = (item) => kindOrderOf(item.kind);
   const pagesOf = (items) => items.flatMap((item) => item.pages);
   const countPages = (items) => pagesOf(items).length;
 
@@ -199,32 +21,6 @@
   }
 
   const sortPages = (pages) => [...pages].sort(comparePages);
-
-  function normalizeName(fileName) {
-    return fileName
-      .replace(/\.[^.]+$/, "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-  }
-
-  function detectKind(name) {
-    const normalized = normalizeName(name);
-    const match = Object.entries(KIND_RULES).find(([, rule]) => rule.namePattern?.test(normalized));
-    return match ? match[0] : Kind.CHAPTER;
-  }
-
-  function createItem({
-    folder,
-    kind,
-    pages,
-    title = "",
-    titleSource = TitleSource.DEFAULT,
-    manual = false,
-    origins = null,
-  }) {
-    return { folder, kind, title, titleSource, pages, manual, origins };
-  }
 
   function compareItems(a, b) {
     return sortOrderOf(a) - sortOrderOf(b) || collator.compare(a.folder ?? "", b.folder ?? "");
@@ -361,62 +157,12 @@
     return [...target.origins].reduce((list, [page, folder]) => returnPage(list, page, folder), withoutTarget);
   }
 
-  function normalizeMetadata(raw) {
-    const text = (value) => String(value ?? "").trim();
-    const genreList = text(raw.genres)
-      .split(",")
-      .map((genre) => genre.trim())
-      .filter(Boolean);
-    return {
-      series: text(raw.series),
-      volume: text(raw.volume),
-      summary: text(raw.summary),
-      year: text(raw.year),
-      writer: text(raw.writer),
-      penciller: text(raw.penciller),
-      publisher: text(raw.publisher),
-      genreList,
-      genres: genreList.join(", "),
-      language: text(raw.language).toLowerCase(),
-      readingMode: raw.readingMode || ReadingMode.RIGHT_TO_LEFT,
-    };
-  }
-
-  function validateMetadata(metadata) {
-    const missing = REQUIRED_FIELDS.filter((field) => !metadata[field]).map((field) => ({ field, rule: "required" }));
-    const invalid = metadata.language && !ISO_639_1_CODES.includes(metadata.language);
-    return invalid ? [...missing, { field: "language", rule: "invalid" }] : missing;
-  }
-
-  function outputFileName(series, extension) {
-    const baseName = (series || DEFAULT_OUTPUT_NAME).replace(FILE_NAME_FORBIDDEN_CHARS, "_");
-    return `${baseName}.${extension}`;
-  }
-
   Tojiru.domain = {
-    DEFAULT_OUTPUT_NAME,
-    UNDETERMINED_LANGUAGE,
-    ISO_639_1_CODES,
+    ...Tojiru.domain,
     LOOSE_FOLDER,
-    Kind,
-    ReadingMode,
-    TitleSource,
-    ALL_KINDS,
-    MANUAL_KINDS,
-    REQUIRED_FIELDS,
-    ErrorCode,
-    NoticeCode,
-    AppError,
-    MetadataError,
-    ImageReadError,
-    toAppError,
-    isImageName,
-    extensionOf,
     isChapter,
     pagesOf,
     countPages,
-    detectKind,
-    createItem,
     buildItems,
     rootFolderName,
     computeStartPages,
@@ -429,8 +175,5 @@
     markChapterTitles,
     extractPages,
     restoreItem,
-    normalizeMetadata,
-    validateMetadata,
-    outputFileName,
   };
 })((window.Tojiru = window.Tojiru || {}));

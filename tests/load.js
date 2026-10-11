@@ -32,7 +32,15 @@ function readTranslations() {
 }
 
 function loadScripts(files, globals = {}) {
-  const context = vm.createContext({ ...globals });
+  const context = vm.createContext({
+    URL,
+    crypto,
+    fetch,
+    Blob,
+    setTimeout,
+    clearTimeout,
+    ...globals,
+  });
   context.window = context;
   context.window.Tojiru = context.window.Tojiru || {};
   context.window.Tojiru.i18n = context.window.Tojiru.i18n || {};

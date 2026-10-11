@@ -15,6 +15,7 @@ Organize imagens de mangá e gere um **CBZ** ou **EPUB** com índice e metadados
 - Grava o arquivo em disco durante a geração, em vez de montá-lo inteiro na memória, quando o navegador permite.
 - Não depende de build, CDN ou serviço externo.
 - Interface em inglês e português (Brasil).
+- Suporte a Docker com contêiner leve baseado em Nginx.
 
 ## Começar
 
@@ -105,11 +106,22 @@ O código é dividido em camadas, e o teste `tests/architecture.test.js` impede 
 
 ## Executar e testar
 
-Não há etapa de build. Abra `index.html` diretamente ou inicie um servidor estático:
+Não há etapa de build. Abra `index.html` diretamente, inicie um servidor estático ou execute com Docker:
 
 ```sh
 python3 -m http.server 8000
 ```
+
+### Docker
+
+Construa e execute o contêiner localmente:
+
+```sh
+docker build -t tojiru .
+docker run -p 8080:80 tojiru
+```
+
+Em seguida, acesse `http://localhost:8080` no navegador.
 
 Os testes usam `node:test` e JSZip. ESLint e Prettier verificam o código:
 

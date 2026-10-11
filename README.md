@@ -15,6 +15,7 @@ Organize manga images and generate a **CBZ** or **EPUB** with an index and metad
 - Writes the file to disk while generating, instead of building it entirely in memory, when the browser allows it.
 - Needs no build step, CDN or external service.
 - Interface in English and Portuguese (Brazil).
+- Docker support with a lightweight Nginx container.
 
 ## Getting started
 
@@ -105,11 +106,22 @@ The code is split into layers, and the `tests/architecture.test.js` test prevent
 
 ## Running and testing
 
-There is no build step. Open `index.html` directly or start a static server:
+There is no build step. Open `index.html` directly, start a static server, or run with Docker:
 
 ```sh
 python3 -m http.server 8000
 ```
+
+### Docker
+
+Build and run the container locally:
+
+```sh
+docker build -t tojiru .
+docker run -p 8080:80 tojiru
+```
+
+Then open `http://localhost:8080` in your browser.
 
 The tests use `node:test` and JSZip. ESLint and Prettier check the code:
 

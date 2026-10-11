@@ -134,7 +134,11 @@
     const onClick = (element, handler) => element.addEventListener("click", () => handler());
 
     function bindActions(actions) {
-      elements.folderInput.addEventListener("change", (event) => actions.onFolderSelected(event.target.files));
+      elements.folderInput.addEventListener("change", (event) => {
+        const files = event.target.files;
+        elements.folderInput.value = "";
+        actions.onFolderSelected(files);
+      });
       elements.seriesInput.addEventListener("input", () => actions.onSeriesTyped());
       onClick(elements.extractButton, actions.onExtractFolderNames);
       onClick(elements.numberButton, actions.onNumberChapters);

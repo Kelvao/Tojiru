@@ -76,7 +76,7 @@
     </script>
   </head>
   <body>
-    <div class="hb">
+    <header class="hb">
       <a
         class="gh"
         href="https://github.com/Kelvao/Tojiru"
@@ -110,7 +110,7 @@
         </svg>
         <span id="langCode"></span>
       </button>
-    </div>
+    </header>
     <main>
       <div class="layout">
         <div class="rail">
@@ -214,6 +214,8 @@
                   <input
                     id="year"
                     type="number"
+                    min="1"
+                    step="1"
                     aria-describedby="hint-year"
                     data-i18n-placeholder="placeholder.year"
                   />
@@ -243,6 +245,8 @@
                   <input
                     id="volume"
                     type="number"
+                    min="0"
+                    step="1"
                     aria-describedby="hint-volume"
                     data-i18n-placeholder="placeholder.volume"
                   />

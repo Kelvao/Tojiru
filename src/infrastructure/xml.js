@@ -1,5 +1,5 @@
 (function (Tojiru) {
-  const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+  const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/g;
 
   const escapeXml = (value) =>
     String(value)

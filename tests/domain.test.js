@@ -270,6 +270,8 @@ test("normalizeMetadata trims fields and splits genres", () => {
 
 test("outputFileName sanitises forbidden characters and falls back to a default", () => {
   assert.equal(D.outputFileName("A/B:C?", "cbz"), "A_B_C_.cbz");
+  assert.equal(D.outputFileName("A\u0000B\u001fC", "cbz"), "A_B_C.cbz");
+  assert.equal(D.outputFileName("x".repeat(300), "cbz"), `${"x".repeat(180)}.cbz`);
   assert.equal(D.outputFileName("", "epub"), "manga.epub");
 });
 

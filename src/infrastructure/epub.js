@@ -9,6 +9,7 @@
   const EPUB_FILE_OPTIONS = { createFolders: false };
   const EPUB_STORED_OPTIONS = { createFolders: false, compression: "STORE" };
   const EPUB_MEMORY_OPTIONS = { mimeType: EPUB_MEDIA_TYPE, compression: "DEFLATE" };
+  const IMAGE_READ_CONCURRENCY = 6;
 
   const EPUB_CONTAINER_XML = `<?xml version="1.0" encoding="utf-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -255,14 +256,20 @@ ${spineItems}  </spine>
 
   function createEpubFormat({ getJsZip, imageDecoder, generateUuid, createSink = null, clock = () => new Date() }) {
     async function prepareAllImages(pages, onProgress) {
-      const images = [];
-      for (const [index, page] of pages.entries()) {
-        images.push(await imageDecoder.prepare(page));
-        onProgress({
-          stage: "reading",
-          percent: ((index + 1) / pages.length) * EPUB_READING_SHARE,
-          current: index + 1,
-          total: pages.length,
+      const images = new Array(pages.length);
+      let completed = 0;
+      for (let start = 0; start < pages.length; start += IMAGE_READ_CONCURRENCY) {
+        const batch = pages.slice(start, start + IMAGE_READ_CONCURRENCY);
+        const results = await Promise.all(batch.map((page) => imageDecoder.prepare(page)));
+        results.forEach((img, i) => {
+          images[start + i] = img;
+          completed++;
+          onProgress({
+            stage: "reading",
+            percent: (completed / pages.length) * EPUB_READING_SHARE,
+            current: completed,
+            total: pages.length,
+          });
         });
       }
       return images;

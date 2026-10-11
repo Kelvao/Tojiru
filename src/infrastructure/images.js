@@ -47,7 +47,12 @@
       canvas.height = height;
       canvas.getContext("2d").drawImage(decoded, 0, 0);
       return new Promise((resolve, reject) =>
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))), CONVERTED_IMAGE.mediaType),
+        canvas.toBlob((blob) => {
+          canvas.width = 0;
+          canvas.height = 0;
+          if (blob) resolve(blob);
+          else reject(new Error("toBlob failed"));
+        }, CONVERTED_IMAGE.mediaType),
       );
     }
 

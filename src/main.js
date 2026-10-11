@@ -1,7 +1,8 @@
-(function (Tojiru) {
+(async function (Tojiru) {
+  Tojiru.started = true;
   const { createManga } = Tojiru.domain;
   const { createStore, createUseCases } = Tojiru.usecases;
-  const { DEFAULT_LANGUAGE, LANGUAGES, TRANSLATIONS, detectLanguage, createTranslator } = Tojiru.i18n;
+  const { DEFAULT_LANGUAGE, LANGUAGES, detectLanguage, createTranslator } = Tojiru.i18n;
   const {
     pagesFromFileList,
     createBlobSaver,
@@ -9,6 +10,7 @@
     createLanguageStore,
     createPreviewUrls,
     generateUuid,
+    loadTranslations,
   } = Tojiru.infra.browser;
   const { createImageDecoder } = Tojiru.infra.images;
   const { createCbzFormat } = Tojiru.infra.cbz;
@@ -23,9 +25,12 @@
     return window.JSZip;
   }
 
+  const translations = await loadTranslations(Object.keys(LANGUAGES));
+  Tojiru.i18n.TRANSLATIONS = translations;
+
   const languageStore = createLanguageStore({ storageKey: LANGUAGE_STORAGE_KEY, windowRef: window });
   const translator = createTranslator({
-    translations: TRANSLATIONS,
+    translations,
     fallback: DEFAULT_LANGUAGE,
     language: detectLanguage({
       stored: languageStore.read(),
@@ -57,6 +62,4 @@
     languageStore,
     readPages: pagesFromFileList,
   }).start();
-
-  Tojiru.started = true;
 })((window.Tojiru = window.Tojiru || {}));

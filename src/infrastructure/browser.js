@@ -130,6 +130,17 @@
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   }
 
+  async function loadTranslations(languages, basePath = "locales") {
+    const entries = await Promise.all(
+      languages.map(async (language) => {
+        const response = await fetch(`${basePath}/${language}.json`);
+        if (!response.ok) throw new Error(`Could not load translations for ${language}`);
+        return [language, await response.json()];
+      }),
+    );
+    return Object.fromEntries(entries);
+  }
+
   Tojiru.infra = Tojiru.infra || {};
   Tojiru.infra.browser = {
     pagesFromFileList,
@@ -138,5 +149,6 @@
     createLanguageStore,
     createPreviewUrls,
     generateUuid,
+    loadTranslations,
   };
 })((window.Tojiru = window.Tojiru || {}));

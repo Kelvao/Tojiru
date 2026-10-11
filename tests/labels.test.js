@@ -35,4 +35,3 @@ test("folderLabel combines unique origins for manual items", () => {
   const item = { manual: true, origins };
   assert.equal(labels.folderLabel(item), "de Capítulo 1, (raiz)");
 });
-

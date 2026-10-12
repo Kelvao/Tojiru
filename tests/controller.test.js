@@ -27,7 +27,7 @@ function createMockView() {
     exportEnabled: false,
     fieldErrors: [],
     staticTranslationsApplied: 0,
-    languageCodeRendered: null,
+    languageRendered: null,
     pickerCount: 0,
     pickerOpenedWith: null,
     pickerClosed: false,
@@ -60,8 +60,11 @@ function createMockView() {
     applyStaticTranslations() {
       state.staticTranslationsApplied++;
     },
-    renderLanguageCode(langs) {
-      state.languageCodeRendered = langs;
+    renderLanguage(lang) {
+      state.languageRendered = lang;
+    },
+    fillLanguageOptions(langs) {
+      state.languageOptionsFilled = langs;
     },
     fillPickerKinds() {},
     fillMangaLanguageOptions() {},
@@ -186,6 +189,20 @@ test("onSeriesTyped prevents overwriting custom series name on subsequent folder
   view.state.boundActions.onFolderSelected([{ name: "01.jpg", path: "FolderName/01.jpg", source: {} }]);
 
   assert.equal(store.get().manga.metadata.series, "Custom Typed Title");
+});
+
+test("selectLanguage switches language, persists choice, and refreshes titles", () => {
+  const { controller, translator, languageStore, view } = setupController();
+  controller.start();
+
+  assert.equal(translator.language, "en");
+  assert.equal(view.state.languageRendered, "en");
+  view.state.boundActions.onSelectLanguage("ja");
+
+  assert.equal(translator.language, "ja");
+  assert.equal(languageStore.read(), "ja");
+  assert.equal(view.state.languageRendered, "ja");
+  assert.equal(view.state.staticTranslationsApplied, 2);
 });
 
 test("toggleLanguage cycles languages, persists choice, and refreshes titles", () => {

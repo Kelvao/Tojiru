@@ -45,14 +45,16 @@
 
     function onMetadataChange(handler) {
       fieldRows().forEach((row) => {
-        row.addEventListener("input", () => handler(row.dataset.field, controlOf(row).value));
+        const notify = () => handler(row.dataset.field, controlOf(row).value);
+        row.addEventListener("input", notify);
+        row.addEventListener("change", notify);
       });
     }
 
     function createLanguageOption({ code, name }) {
       const option = dom.createElement("option");
       option.value = code;
-      option.label = name;
+      option.textContent = `${name} (${code})`;
       return option;
     }
 
@@ -61,13 +63,24 @@
       const names = new Intl.DisplayNames([locale], { type: "language" });
       const collator = new Intl.Collator(locale);
       const capitalize = (name) => name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);
+      const emptyOption = dom.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = "—";
       const options = ISO_639_1_CODES.map((code) => ({ code, name: capitalize(names.of(code)) }))
         .sort((a, b) => collator.compare(a.name, b.name))
         .map(createLanguageOption);
-      elements.mangaLanguageList.replaceChildren(...options);
+      const target = elements.mangaLanguageList;
+      if (target) {
+        const current = target.value;
+        target.replaceChildren(emptyOption, ...options);
+        if (current) target.value = current;
+      }
     }
 
-    fieldRows().forEach((row) => row.addEventListener("input", () => markFieldInvalid(row, false)));
+    fieldRows().forEach((row) => {
+      row.addEventListener("input", () => markFieldInvalid(row, false));
+      row.addEventListener("change", () => markFieldInvalid(row, false));
+    });
 
     return {
       renderFieldTags,

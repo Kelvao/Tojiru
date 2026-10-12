@@ -50,19 +50,23 @@
 
     function refreshLanguage() {
       view.applyStaticTranslations();
-      view.renderLanguageCode(LANGUAGES);
+      view.renderLanguage(translator.language);
       view.fillPickerKinds();
       view.fillMangaLanguageOptions();
       render(store.get());
       view.renderStatus(statusMessage);
     }
 
-    function toggleLanguage() {
-      const language = nextLanguage(translator.language, supportedLanguages);
+    function selectLanguage(language) {
+      if (!supportedLanguages.includes(language)) return;
       translator.setLanguage(language);
       languageStore.write(language);
       useCases.refreshTitles();
       refreshLanguage();
+    }
+
+    function toggleLanguage() {
+      selectLanguage(nextLanguage(translator.language, supportedLanguages));
     }
 
     function loadFolder(files) {
@@ -113,6 +117,7 @@
 
     function start() {
       useCases.loadMetadata(view.readMetadataForm());
+      view.fillLanguageOptions?.(LANGUAGES);
       view.bindActions({
         onFolderSelected: loadFolder,
         onSeriesTyped: () => {
@@ -126,6 +131,7 @@
         onSelectFormat: (formatId) => useCases.selectOutputFormat(formatId),
         onOpenPicker: openPicker,
         onConfirmPicker: confirmPicker,
+        onSelectLanguage: selectLanguage,
         onToggleLanguage: toggleLanguage,
         onMetadataChange: (field, value) => useCases.changeMetadata(field, value, { quiet: true }),
       });

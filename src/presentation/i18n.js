@@ -4,6 +4,11 @@
   const LANGUAGES = {
     en: { code: "EN", name: "English" },
     "pt-BR": { code: "PT", name: "Português (Brasil)" },
+    es: { code: "ES", name: "Español" },
+    fr: { code: "FR", name: "Français" },
+    ja: { code: "JA", name: "日本語" },
+    de: { code: "DE", name: "Deutsch" },
+    it: { code: "IT", name: "Italiano" },
   };
 
   const TRANSLATIONS = Tojiru.i18n?.TRANSLATIONS || {};

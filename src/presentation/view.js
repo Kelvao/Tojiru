@@ -6,7 +6,7 @@
   function findElements({ byId, all }) {
     return {
       folderInput: byId("dir"),
-      mangaLanguageList: byId("langList"),
+      mangaLanguageList: byId("lang"),
       folderStatus: byId("st"),
       list: byId("list"),
       summary: byId("sum"),
@@ -19,8 +19,7 @@
       sidecarButton: byId("xml"),
       generateButton: byId("go"),
       addButton: byId("add"),
-      languageButton: byId("langToggle"),
-      languageCode: byId("langCode"),
+      languageSelect: byId("langSelect"),
       formatButtons: all("[data-format]"),
       metadataFields: all("[data-field] :is(input, select, textarea)"),
       picker: byId("picker"),
@@ -62,8 +61,14 @@
       metadataForm.renderFieldTags();
     }
 
-    function renderLanguageCode(languages) {
-      elements.languageCode.textContent = languages[translator.language].code;
+    function fillLanguageOptions(languages) {
+      if (!elements.languageSelect) return;
+      const options = Object.entries(languages).map(([key, info]) => dom.createOption(key, info.name));
+      elements.languageSelect.replaceChildren(...options);
+    }
+
+    function renderLanguage(language) {
+      if (elements.languageSelect) elements.languageSelect.value = language;
     }
 
     function renderFormat(formats, selectedId) {
@@ -108,7 +113,7 @@
       ];
       const editingControls = [
         elements.folderInput,
-        elements.languageButton,
+        elements.languageSelect,
         ...elements.metadataFields,
         ...elements.formatButtons,
       ];
@@ -147,7 +152,11 @@
       onClick(elements.generateButton, actions.onGenerate);
       onClick(elements.addButton, actions.onOpenPicker);
       onClick(elements.pickOk, actions.onConfirmPicker);
-      onClick(elements.languageButton, actions.onToggleLanguage);
+      if (elements.languageSelect) {
+        elements.languageSelect.addEventListener("change", () => {
+          actions.onSelectLanguage(elements.languageSelect.value);
+        });
+      }
       elements.formatButtons.forEach((button) => onClick(button, () => actions.onSelectFormat(button.dataset.format)));
       metadataForm.onMetadataChange(actions.onMetadataChange);
     }
@@ -155,7 +164,8 @@
     return {
       bindActions,
       applyStaticTranslations,
-      renderLanguageCode,
+      fillLanguageOptions,
+      renderLanguage,
       renderFormat,
       renderLibrary: library.renderLibrary,
       renderStatus,

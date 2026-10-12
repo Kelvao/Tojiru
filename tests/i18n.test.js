@@ -11,12 +11,12 @@ test("detectLanguage prefers a stored supported language", () => {
 });
 
 test("detectLanguage ignores unsupported stored values and maps Portuguese variants", () => {
-  assert.equal(i18n.detectLanguage({ stored: "fr", preferred: ["pt-PT", "en"], supported, fallback: "en" }), "pt-BR");
+  assert.equal(i18n.detectLanguage({ stored: "xx", preferred: ["pt-PT", "en"], supported, fallback: "en" }), "pt-BR");
   assert.equal(i18n.detectLanguage({ stored: null, preferred: ["", "EN-gb"], supported, fallback: "pt-BR" }), "en");
 });
 
 test("detectLanguage falls back when nothing matches", () => {
-  assert.equal(i18n.detectLanguage({ stored: null, preferred: ["fr-FR", "ja"], supported, fallback: "en" }), "en");
+  assert.equal(i18n.detectLanguage({ stored: null, preferred: ["xx-XX", "yy"], supported, fallback: "en" }), "en");
 });
 
 test("translator interpolates parameters and chooses plural forms", () => {
@@ -48,6 +48,9 @@ test("every language defines the same keys", () => {
 });
 
 test("nextLanguage cycles through supported languages", () => {
-  assert.equal(i18n.nextLanguage("en", supported), "pt-BR");
-  assert.equal(i18n.nextLanguage("pt-BR", supported), "en");
+  for (let i = 0; i < supported.length; i++) {
+    const current = supported[i];
+    const expected = supported[(i + 1) % supported.length];
+    assert.equal(i18n.nextLanguage(current, supported), expected);
+  }
 });

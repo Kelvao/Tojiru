@@ -349,6 +349,17 @@ test("changeMetadata updates one field, ignores unknown ones and can stay quiet"
   assert.equal("unknown" in store.get().manga.metadata, false);
 });
 
+test("clearMetadata resets metadata fields to defaults", () => {
+  const { store, useCases } = setup();
+  useCases.changeMetadata("series", "One Piece");
+  useCases.changeMetadata("writer", "Oda");
+  assert.equal(store.get().manga.metadata.series, "One Piece");
+  useCases.clearMetadata();
+  assert.equal(store.get().manga.metadata.series, "");
+  assert.equal(store.get().manga.metadata.writer, "");
+  assert.equal(store.get().manga.metadata.readingMode, "YesAndRightToLeft");
+});
+
 test("the manga keeps its metadata while the items change", () => {
   const { store, useCases } = setup();
   useCases.changeMetadata("series", "Berserk");

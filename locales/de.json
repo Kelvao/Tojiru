@@ -58,6 +58,7 @@
   "action.newItem": "+ Neuer Eintrag",
   "action.numberChapters": "Kapitel nummerieren",
   "action.clearNames": "Namen löschen",
+  "action.clearDetails": "Löschen",
   "action.extractFolders": "Aus Ordnern übernehmen",
   "action.downloadSidecar": "{name} herunterladen",
   "action.generate": "{format} erstellen",

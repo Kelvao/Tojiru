@@ -58,6 +58,7 @@
   "action.newItem": "+ Novo item",
   "action.numberChapters": "Gerar numeração",
   "action.clearNames": "Limpar nomes",
+  "action.clearDetails": "Limpar",
   "action.extractFolders": "Extrair das pastas",
   "action.downloadSidecar": "Baixar {name}",
   "action.generate": "Gerar {format}",

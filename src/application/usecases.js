@@ -75,6 +75,9 @@
       loadMetadata(rawMetadata) {
         changeManga(() => ({ metadata: createMetadata(rawMetadata) }));
       },
+      clearMetadata() {
+        changeManga(() => ({ metadata: createMetadata() }));
+      },
       changeMetadata(field, value, options) {
         changeManga((manga) => ({ metadata: setMetadataField(manga.metadata, field, value) }), options);
       },

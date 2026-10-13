@@ -16,6 +16,7 @@
       extractButton: byId("extract"),
       numberButton: byId("auto"),
       clearButton: byId("clear"),
+      clearDetailsButton: byId("clearDetails"),
       sidecarButton: byId("xml"),
       generateButton: byId("go"),
       addButton: byId("add"),
@@ -113,10 +114,11 @@
       ];
       const editingControls = [
         elements.folderInput,
+        elements.clearDetailsButton,
         elements.languageSelect,
         ...elements.metadataFields,
         ...elements.formatButtons,
-      ];
+      ].filter(Boolean);
       exportControls.forEach((control) => {
         control.disabled = exportDisabled;
       });
@@ -136,7 +138,7 @@
       updateControls();
     };
 
-    const onClick = (element, handler) => element.addEventListener("click", () => handler());
+    const onClick = (element, handler) => element?.addEventListener("click", () => handler());
 
     function bindActions(actions) {
       elements.folderInput.addEventListener("change", (event) => {
@@ -148,6 +150,7 @@
       onClick(elements.extractButton, actions.onExtractFolderNames);
       onClick(elements.numberButton, actions.onNumberChapters);
       onClick(elements.clearButton, actions.onClearTitles);
+      onClick(elements.clearDetailsButton, actions.onClearMetadata);
       onClick(elements.sidecarButton, actions.onExportSidecar);
       onClick(elements.generateButton, actions.onGenerate);
       onClick(elements.addButton, actions.onOpenPicker);

@@ -313,3 +313,18 @@ test("picker interactions open dialog, toggle selections, and confirm manual ite
   assert.equal(store.get().manga.items.length, 2);
   assert.equal(store.get().manga.items[0].kind, D.Kind.COVER);
 });
+
+test("onClearMetadata clears metadata and field errors", () => {
+  const { controller, store, view } = setupController();
+  controller.start();
+  assert.equal(store.get().manga.metadata.series, "Initial Series");
+
+  let clearedErrors = false;
+  view.clearFieldErrors = () => {
+    clearedErrors = true;
+  };
+
+  view.state.boundActions.onClearMetadata();
+  assert.equal(store.get().manga.metadata.series, "");
+  assert.equal(clearedErrors, true);
+});

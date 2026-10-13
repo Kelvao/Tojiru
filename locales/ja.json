@@ -58,6 +58,7 @@
   "action.newItem": "+ 項目を追加",
   "action.numberChapters": "話数を自動付番",
   "action.clearNames": "名前をクリア",
+  "action.clearDetails": "クリア",
   "action.extractFolders": "フォルダ名から抽出",
   "action.downloadSidecar": "{name} をダウンロード",
   "action.generate": "{format} を生成",

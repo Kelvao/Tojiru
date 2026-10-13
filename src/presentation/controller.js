@@ -126,6 +126,11 @@
         onExtractFolderNames: () => useCases.extractFolderNames(),
         onNumberChapters: () => useCases.numberChapters(),
         onClearTitles: () => useCases.clearTitles(),
+        onClearMetadata: () => {
+          seriesTypedByUser = false;
+          view.clearFieldErrors();
+          useCases.clearMetadata();
+        },
         onExportSidecar: exportSidecar,
         onGenerate: generate,
         onSelectFormat: (formatId) => useCases.selectOutputFormat(formatId),

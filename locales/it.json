@@ -58,6 +58,7 @@
   "action.newItem": "+ Nuovo elemento",
   "action.numberChapters": "Numera i capitoli",
   "action.clearNames": "Cancella nomi",
+  "action.clearDetails": "Cancella",
   "action.extractFolders": "Estrai dalle cartelle",
   "action.downloadSidecar": "Scarica {name}",
   "action.generate": "Genera {format}",

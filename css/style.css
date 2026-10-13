@@ -7,6 +7,9 @@
 }
 
 :root {
+  --page-max: 720px;
+  --hb-h: 48px;
+  --error: #ff7b63;
   --win: #222226;
   --hb: #2e2e32;
   --pop: #36363a;
@@ -272,6 +275,60 @@ textarea {
   color: rgba(255, 255, 255, 0.3);
 }
 
+.er-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tag {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--btn);
+  color: var(--tag-fg);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tag.required {
+  background: var(--tag-req-bg);
+  color: var(--tag-req-fg);
+}
+
+.hint {
+  margin-top: 2px;
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.field-error {
+  display: none;
+  margin-top: 2px;
+  color: var(--error);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.er.invalid {
+  outline: 2px solid var(--error);
+  outline-offset: -2px;
+}
+
+.er.invalid .hint {
+  display: none;
+}
+
+.er.invalid .field-error {
+  display: block;
+}
+
+.er.invalid .tag.required {
+  background: rgba(255, 123, 99, 0.2);
+  color: var(--error);
+}
+
 button {
   display: inline-flex;
   align-items: center;
@@ -306,6 +363,14 @@ button.pri:hover {
 
 button.pri:active {
   background: #b25ecb;
+}
+
+button.flat {
+  background: transparent;
+}
+
+button.flat:hover {
+  background: var(--btn);
 }
 
 button:focus-visible {
@@ -500,6 +565,33 @@ button.lnk {
 .bar .pri {
   border-radius: 999px;
   padding: 0 24px;
+}
+
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--card);
+}
+
+.seg button {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mu);
+  font-size: 13px;
+}
+
+.seg button:hover {
+  background: var(--btn);
+  color: var(--fg);
+}
+
+.seg button[aria-checked="true"] {
+  background: var(--btna);
+  color: var(--fg);
 }
 
 #sum {
@@ -736,20 +828,20 @@ dialog[open] {
   textarea {
     font-size: 16px;
   }
+  .seg button {
+    min-height: 38px;
+  }
+  .hb .gh,
+  .hb .lang-wrap,
+  .hb .lang-wrap select {
+    min-height: 44px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
   }
-}
-
-button.flat {
-  background: transparent;
-}
-
-button.flat:hover {
-  background: var(--btn);
 }
 
 .hb .lang-wrap {
@@ -878,12 +970,6 @@ button.flat:hover {
   }
 }
 
-:root {
-  --page-max: 720px;
-  --hb-h: 48px;
-  --error: #ff7b63;
-}
-
 @media (min-width: 1100px) {
   :root {
     --page-max: 100%;
@@ -996,101 +1082,6 @@ button.flat:hover {
   }
 }
 
-@media (pointer: coarse) {
-  .hb .gh,
-  .hb .lang-wrap,
-  .hb .lang-wrap select {
-    min-height: 44px;
-  }
-}
-
 [hidden] {
   display: none !important;
-}
-
-.seg {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 11px;
-  background: var(--card);
-}
-
-.seg button {
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--mu);
-  font-size: 13px;
-}
-
-.seg button:hover {
-  background: var(--btn);
-  color: var(--fg);
-}
-
-.seg button[aria-checked="true"] {
-  background: var(--btna);
-  color: var(--fg);
-}
-
-@media (pointer: coarse) {
-  .seg button {
-    min-height: 38px;
-  }
-}
-
-.er-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.tag {
-  flex: none;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--btn);
-  color: var(--tag-fg);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.tag.required {
-  background: var(--tag-req-bg);
-  color: var(--tag-req-fg);
-}
-
-.hint {
-  margin-top: 2px;
-  color: var(--mu);
-  font-size: 12px;
-}
-
-.field-error {
-  display: none;
-  margin-top: 2px;
-  color: var(--error);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.er.invalid {
-  outline: 2px solid var(--error);
-  outline-offset: -2px;
-}
-
-.er.invalid .hint {
-  display: none;
-}
-
-.er.invalid .field-error {
-  display: block;
-}
-
-.er.invalid .tag.required {
-  background: rgba(255, 123, 99, 0.2);
-  color: var(--error);
 }

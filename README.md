@@ -1,30 +1,39 @@
+<div align="center">
+
 # Tojiru 綴じる
 
-[![Official Website](https://img.shields.io/badge/Official_Website-Tojiru%20綴-dc8add)](https://tojiru.pages.dev/)
-[![Status](https://img.shields.io/uptimerobot/status/m803438082-8cc629151c0346a7bf46cecb?label=Status)](https://stats.uptimerobot.com/AhVkgcXoGz)
-[![Uptime](https://img.shields.io/uptimerobot/ratio/m803438082-8cc629151c0346a7bf46cecb?label=Uptime)](https://stats.uptimerobot.com/AhVkgcXoGz)
+**Zero-build client-side manga organizer & converter for CBZ & EPUB**
 
-🌐 Read in: English | [Português Brasileiro](README.pt-BR.md)
+[![Official Website](https://img.shields.io/badge/Official_Website-Tojiru%20綴-9141ac?style=for-the-badge&logo=googlechrome&logoColor=white)](https://tojiru.pages.dev/)
+[![Status](https://img.shields.io/uptimerobot/status/m803438082-8cc629151c0346a7bf46cecb?label=Status&style=for-the-badge)](https://stats.uptimerobot.com/AhVkgcXoGz)
+[![Uptime](https://img.shields.io/uptimerobot/ratio/m803438082-8cc629151c0346a7bf46cecb?label=Uptime&style=for-the-badge)](https://stats.uptimerobot.com/AhVkgcXoGz)
 
-Organize manga images and generate a **CBZ** or **EPUB** with an index and metadata. Everything is processed in the browser; images are never uploaded to a server.
+🌐 **Language:** English · [Português Brasileiro](README.pt-BR.md)
 
-## Features
+</div>
 
-- Reads a manga folder and turns each subfolder into an index item (chapter, cover, extra, etc.).
-- Generates a **CBZ** with `ComicInfo.xml` (index, author, genres, title) or a fixed-layout **EPUB 3**.
-- Writes the file to disk while generating, instead of building it entirely in memory, when the browser allows it.
-- Needs no build step, CDN or external service.
-- Interface in English and Portuguese (Brazil).
-- Docker support with a lightweight Nginx container.
+---
 
-## Getting started
+Organize manga images and generate a **CBZ** or **EPUB** with an index and metadata. Everything is processed directly in the browser; images are never uploaded to a server.
+
+## ✨ Features
+
+- 📁 **Smart Folder Parsing:** Reads a manga folder and turns each subfolder into an index item (chapter, cover, extra, etc.).
+- 📦 **Modern Formats:** Generates a **CBZ** with `ComicInfo.xml` (index, author, genres, title) or a fixed-layout **EPUB 3**.
+- ⚡ **Streaming Disk Storage:** Writes the file directly to disk via OPFS while generating, instead of assembling it entirely in memory.
+- 🔒 **100% Private & Offline:** Zero build step, no CDN, and no external services required.
+- 🌍 **Multilingual:** Interface with multi-language support.
+- 🐳 **Docker Ready:** Includes a lightweight Nginx container for self-hosting.
+
+## 🚀 Getting started
 
 1. Open `index.html` in a browser that supports folder selection (`webkitdirectory`).
 2. Select the manga's root folder.
 3. Review the index: edit titles, types and order (▲▼). Use **+ New item** to split pages off a chapter into an item of another type (cover, band, front flap, endpaper, flyleaf, title page, index, extra, back flap, back cover or spine); **Undo** returns the pages to the original item.
 4. Fill in the title, choose **CBZ** or **EPUB** and click **Generate**.
 
-The title is required and also sets the file name. When you choose the folder, it is filled in with the root folder's name if empty. The other metadata fields are optional.
+> [!NOTE]
+> The title is required and also sets the file name. When you choose the folder, it is filled in with the root folder's name if empty. The other metadata fields are optional.
 
 ## How the folder is organized
 
@@ -75,7 +84,7 @@ Details and limits:
 - Converting AVIF and BMP decodes the whole image and keeps the PNG in memory until packaging. The PNG is usually much larger than the original AVIF.
 - In the CBZ there is no conversion: AVIF and BMP are included as they are, and the reader must know how to open them.
 
-## Memory and temporary storage
+## 💾 Memory and temporary storage
 
 When generating the file, Tojiru tries to write it piece by piece to the browser's private storage (OPFS, `tojiru-tmp` folder) and only then starts the download. This avoids building a large file entirely in memory.
 
@@ -87,24 +96,26 @@ When generating the file, Tojiru tries to write it piece by piece to the browser
 - Two tabs generating at the same time may delete each other's temporary files.
 - Failures are shown in the interface language, in red, with what happened and what to do next (a corrupted image names the file; a size limit suggests splitting the manga). When the app falls back to memory, the success message adds a notice about it. Unexpected failures also log the original error to the browser console.
 
-EPUB generation measures all images before packaging and may take longer than CBZ, especially with AVIF and BMP.
+> [!TIP]
+> EPUB generation measures all images before packaging and may take longer than CBZ, especially with AVIF and BMP.
 
-Tojiru does not read or edit an existing `ComicInfo.xml`.
+> [!NOTE]
+> Tojiru does not read or edit an existing `ComicInfo.xml`.
 
-## Project structure
+## 🏗️ Project structure
 
 The code is split into layers, and the `tests/architecture.test.js` test prevents dependencies from pointing the wrong way.
 
-| Layer          | Folder               | Responsibility                                                                                    |
-| -------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
-| Domain         | `src/domain`         | Pure rules: errors, file naming, metadata schema, type detection, item list (sorting, extraction) |
-| Application    | `src/application`    | Use cases with injected ports, state store, title policy, output document, failure translation    |
-| Infrastructure | `src/infrastructure` | CBZ and EPUB writers, streaming ZIP, image reading and conversion, OPFS, browser adapters         |
-| Presentation   | `src/presentation`   | View components (library, metadata form, picker), controller, translations and user feedback      |
+| Layer              | Folder               | Responsibility                                                                                    |
+| :----------------- | :------------------- | :------------------------------------------------------------------------------------------------ |
+| **Domain**         | `src/domain`         | Pure rules: errors, file naming, metadata schema, type detection, item list (sorting, extraction) |
+| **Application**    | `src/application`    | Use cases with injected ports, state store, title policy, output document, failure translation    |
+| **Infrastructure** | `src/infrastructure` | CBZ and EPUB writers, streaming ZIP, image reading and conversion, OPFS, browser adapters         |
+| **Presentation**   | `src/presentation`   | View components (library, metadata form, picker), controller, translations and user feedback      |
 
 `src/main.js` is the composition root: it wires the layers together and injects the browser adapters. Scripts are loaded in the order of `index.html`, without ES modules, so the project works when the file is opened directly.
 
-## Running and testing
+## 🛠️ Running and testing
 
 There is no build step. Open `index.html` directly, start a static server, or run with Docker:
 
@@ -123,6 +134,8 @@ docker run -p 8080:80 tojiru
 
 Then open `http://localhost:8080` in your browser.
 
+### Test suite
+
 The tests use `node:test` and JSZip. ESLint and Prettier check the code:
 
 ```sh
@@ -134,14 +147,14 @@ Use `npm run format` to format the JavaScript files. The GitHub Actions workflow
 
 JSZip and the Inter font are included in the project and loaded locally, with no CDN dependency. Characters outside Inter's coverage, such as Japanese, use the fonts available on the system.
 
-## Contributing
+## 🤝 Contributing
 
 Run `npm run check` before opening a pull request. This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## License
+## 📄 License
 
 The original code of this project is under the [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use, modification and redistribution are allowed, as long as the license terms and the required attribution notice are kept. Third-party components remain subject to their own licenses.
 
-## Privacy
+## 🛡️ Privacy
 
 Images are processed locally in the browser and never leave it. During generation, the file may be stored temporarily in the browser's private storage (OPFS) and is deleted on the next generation or when the app opens. The chosen language is saved in local storage. No font or library is loaded from an external service.

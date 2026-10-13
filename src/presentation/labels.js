@@ -11,7 +11,16 @@
       return translate("item.from", { folders });
     }
 
-    return { kindLabel, folderLabel };
+    function sizeLabel(bytes) {
+      if (!bytes) return "0 B";
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      const exponent = Math.min(Math.floor(Math.log10(bytes) / 3), units.length - 1);
+      const value = bytes / Math.pow(10, exponent * 3);
+      const formatted = exponent === 0 ? Math.round(value) : value.toFixed(1).replace(/\.0$/, "");
+      return `~${formatted} ${units[exponent]}`;
+    }
+
+    return { kindLabel, folderLabel, sizeLabel };
   }
 
   Tojiru.ui = Tojiru.ui || {};

@@ -35,3 +35,14 @@ test("folderLabel combines unique origins for manual items", () => {
   const item = { manual: true, origins };
   assert.equal(labels.folderLabel(item), "de Capítulo 1, (raiz)");
 });
+
+test("sizeLabel formats bytes in traditional decimal units", () => {
+  const labels = createLabels(fakeTranslate);
+  assert.equal(labels.sizeLabel(0), "0 B");
+  assert.equal(labels.sizeLabel(500), "~500 B");
+  assert.equal(labels.sizeLabel(1000), "~1 KB");
+  assert.equal(labels.sizeLabel(1500), "~1.5 KB");
+  assert.equal(labels.sizeLabel(10000000), "~10 MB");
+  assert.equal(labels.sizeLabel(12400000), "~12.4 MB");
+  assert.equal(labels.sizeLabel(1500000000), "~1.5 GB");
+});

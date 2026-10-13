@@ -335,3 +335,11 @@ test("ImageReadError carries the page name and the original cause", () => {
   assert.deepEqual({ ...image.params }, { name: "a.png" });
   assert.equal(image.cause.message, "decode");
 });
+
+test("totalBytes sums file sizes across items and ignores missing sizes", () => {
+  const items = [
+    { pages: [{ source: { size: 1024 } }, { source: { size: 2048 } }] },
+    { pages: [{ source: { size: 512 } }, { source: null }] },
+  ];
+  assert.equal(D.totalBytes(items), 3584);
+});

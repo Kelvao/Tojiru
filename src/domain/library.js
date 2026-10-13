@@ -8,6 +8,7 @@
   const sortOrderOf = (item) => kindOrderOf(item.kind);
   const pagesOf = (items) => items.flatMap((item) => item.pages);
   const countPages = (items) => pagesOf(items).length;
+  const totalBytes = (items) => pagesOf(items).reduce((sum, page) => sum + (page.source?.size ?? 0), 0);
 
   function comparePages(a, b) {
     const first = a.path.split("/");
@@ -163,6 +164,7 @@
     isChapter,
     pagesOf,
     countPages,
+    totalBytes,
     buildItems,
     rootFolderName,
     computeStartPages,

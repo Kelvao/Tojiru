@@ -1,5 +1,5 @@
 (function (Tojiru) {
-  const { ALL_KINDS, isChapter, countPages, computeStartPages } = Tojiru.domain;
+  const { ALL_KINDS, isChapter, countPages, totalBytes, computeStartPages } = Tojiru.domain;
   const { defaultTitleOf } = Tojiru.usecases;
 
   function createLibraryView({ dom, elements, translate, labels }) {
@@ -73,6 +73,8 @@
       const parts = [translate("count.chapters", { n: chapters })];
       if (extras) parts.push(translate("count.extras", { n: extras }));
       parts.push(pagesText(items));
+      const bytes = totalBytes(items);
+      if (bytes > 0) parts.push(labels.sizeLabel(bytes));
       return parts.join(" · ");
     }
 

@@ -1,6 +1,6 @@
 (function (Tojiru) {
   const { isImageName } = Tojiru.domain;
-  const SAVE_CLEANUP_DELAY_MS = 10000;
+  const SAVE_CLEANUP_DELAY_MS = 60000;
   const OPFS_DIRECTORY = "tojiru-tmp";
   const OPFS_QUOTA_MARGIN = 1.05;
 

@@ -96,3 +96,16 @@ test("source files contain no comments", () => {
     assert.doesNotMatch(source, /^\s*\/\/|\/\*/m, `${file} has comments`);
   }
 });
+
+test("robots.txt allows indexing and blocks AI scrapers", () => {
+  const content = readSource("robots.txt");
+  assert.match(content, /User-agent: \*\s+Allow: \//);
+  assert.match(content, /User-agent: GPTBot\s+Disallow: \//);
+  assert.match(content, /User-agent: ClaudeBot\s+Disallow: \//);
+  assert.match(content, /Sitemap: https:\/\/tojiru\.pages\.dev\/sitemap\.xml/);
+});
+
+test("sitemap.xml defines the canonical site URL", () => {
+  const content = readSource("sitemap.xml");
+  assert.match(content, /<loc>https:\/\/tojiru\.pages\.dev\/<\/loc>/);
+});

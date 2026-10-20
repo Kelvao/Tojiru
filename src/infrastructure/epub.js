@@ -9,7 +9,7 @@
   const EPUB_FILE_OPTIONS = { createFolders: false };
   const EPUB_STORED_OPTIONS = { createFolders: false, compression: "STORE" };
   const EPUB_MEMORY_OPTIONS = { mimeType: EPUB_MEDIA_TYPE, compression: "DEFLATE" };
-  const IMAGE_READ_CONCURRENCY = 6;
+  const IMAGE_READ_CONCURRENCY = 16;
 
   const EPUB_CONTAINER_XML = `<?xml version="1.0" encoding="utf-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">

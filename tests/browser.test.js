@@ -66,8 +66,11 @@ test("createPreviewUrls tracks and releases object URLs", () => {
   };
 
   const previews = browser.createPreviewUrls();
-  const u1 = previews.urlFor({ source: { name: "1.jpg" } });
+  const source1 = { name: "1.jpg" };
+  const u1 = previews.urlFor({ source: source1 });
   const u2 = previews.urlFor({ source: { name: "2.jpg" } });
+  const u1Again = previews.urlFor({ source: source1 });
+  assert.equal(u1Again, u1);
   assert.equal(created.length, 2);
   assert.equal(u1, "blob://fake/1.jpg");
   assert.equal(u2, "blob://fake/2.jpg");

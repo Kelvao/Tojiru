@@ -107,16 +107,17 @@
   }
 
   function createPreviewUrls() {
-    let urls = [];
+    const urls = new Map();
     return {
       urlFor(page) {
+        if (urls.has(page.source)) return urls.get(page.source);
         const url = URL.createObjectURL(page.source);
-        urls.push(url);
+        urls.set(page.source, url);
         return url;
       },
       releaseAll() {
         urls.forEach((url) => URL.revokeObjectURL(url));
-        urls = [];
+        urls.clear();
       },
     };
   }

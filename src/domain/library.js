@@ -10,9 +10,7 @@
   const countPages = (items) => pagesOf(items).length;
   const totalBytes = (items) => pagesOf(items).reduce((sum, page) => sum + (page.source?.size ?? 0), 0);
 
-  function comparePages(a, b) {
-    const first = a.path.split("/");
-    const second = b.path.split("/");
+  function compareSegments(first, second) {
     const shared = Math.min(first.length, second.length);
     for (let index = 0; index < shared; index++) {
       const order = collator.compare(first[index], second[index]);
@@ -21,7 +19,12 @@
     return first.length - second.length;
   }
 
-  const sortPages = (pages) => [...pages].sort(comparePages);
+  function sortPages(pages) {
+    return pages
+      .map((page) => ({ page, parts: page.path.split("/") }))
+      .sort((a, b) => compareSegments(a.parts, b.parts))
+      .map((entry) => entry.page);
+  }
 
   function compareItems(a, b) {
     return sortOrderOf(a) - sortOrderOf(b) || collator.compare(a.folder ?? "", b.folder ?? "");

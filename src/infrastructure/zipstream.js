@@ -36,7 +36,23 @@
 
   function updateCrc(crc, chunk) {
     let value = crc;
-    for (let index = 0; index < chunk.length; index++) value = CRC_TABLE[(value ^ chunk[index]) & 0xff] ^ (value >>> 8);
+    let index = 0;
+    const end = chunk.length - 7;
+    while (index < end) {
+      value = CRC_TABLE[(value ^ chunk[index]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 1]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 2]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 3]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 4]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 5]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 6]) & 0xff] ^ (value >>> 8);
+      value = CRC_TABLE[(value ^ chunk[index + 7]) & 0xff] ^ (value >>> 8);
+      index += 8;
+    }
+    while (index < chunk.length) {
+      value = CRC_TABLE[(value ^ chunk[index]) & 0xff] ^ (value >>> 8);
+      index++;
+    }
     return value;
   }
 
